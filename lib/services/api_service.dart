@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:wms/models/group.dart';
 import 'package:wms/services/auth_storage.dart';
 import 'package:wms/core/utils.dart';
+import 'package:wms/models/group.dart';
+import 'package:wms/models/category.dart' as wms_category;
 
 class APIService {
   /// Базовый URL серверного API.
@@ -206,6 +207,91 @@ class APIService {
       final errorData = jsonDecode(response.body);
       debugPrint('loginUser error: ${response.body}');
       throw ApiException(errorData['error'] ?? 'Неизвестная ошибка авторизации');
+    }
+  }
+
+  // ---------------------------
+  // Методы для работы с категориями
+  // ---------------------------
+
+  Future<List<Map<String, dynamic>>> getAllCategory() async {
+    final headers = await _getHeaders();
+    final response = await http.get(Uri.parse('$baseUrl/categories'), headers: headers);
+
+    if (response.statusCode == 200) {
+      List<dynamic> data = jsonDecode(response.body);
+      debugPrint('getAllCategory: ${response.body}');
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      final errorData = jsonDecode(response.body);
+      debugPrint('getAllCategory error: ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при получении категорий');
+    }
+  }
+
+  Future<wms_category.Category> getCategoryById(int categoryId) async {
+    final headers = await _getHeaders();
+    final response = await http.get(Uri.parse('$baseUrl/categories/$categoryId'), headers: headers);
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> data = jsonDecode(response.body);
+      debugPrint('getCategoryById ($categoryId): ${response.body}');
+      return wms_category.Category.fromJson(data);
+    } else {
+      final errorData = jsonDecode(response.body);
+      debugPrint('getCategoryById error ($categoryId): ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при получении категории по ID');
+    }
+  }
+
+  Future<void> createCategory(Map<String, dynamic> categoryMap) async {
+    final headers = await _getHeaders();
+    debugPrint('Sending createCategory payload: ${jsonEncode(categoryMap)}');
+    final response = await http.post(
+      Uri.parse('$baseUrl/categories'),
+      headers: headers,
+      body: jsonEncode(categoryMap),
+    );
+
+    if (response.statusCode == 201) {
+      debugPrint('createCategory: ${response.body}');
+      return;
+    } else {
+      final errorData = jsonDecode(response.body);
+      debugPrint('createCategory error: ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при создании категории');
+    }
+  }
+
+  Future<void> updateCategory(Map<String, dynamic> categoryMap, int categoryId) async {
+    final headers = await _getHeaders();
+    debugPrint('Sending updateCategory payload for categoryId $categoryId: ${jsonEncode(categoryMap)}');
+    final response = await http.put(
+      Uri.parse('$baseUrl/categories/$categoryId'),
+      headers: headers,
+      body: jsonEncode(categoryMap),
+    );
+
+    if (response.statusCode == 200) {
+      debugPrint('updateCategory ($categoryId): ${response.body}');
+      return;
+    } else {
+      final errorData = jsonDecode(response.body);
+      debugPrint('updateCategory error ($categoryId): ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при обновлении категории');
+    }
+  }
+
+  Future<void> deleteCategory(int categoryID) async {
+    final headers = await _getHeaders();
+    final response = await http.delete(Uri.parse('$baseUrl/categories/$categoryID'), headers: headers);
+    if (response.statusCode == 200) {
+      debugPrint('deleteCategory ($categoryID): ${response.body}');
+      return;
+    } else {
+      final errorData = jsonDecode(response.body);
+      debugPrint('deleteCategory error ($categoryID): ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при удалении категории');
     }
   }
 }
