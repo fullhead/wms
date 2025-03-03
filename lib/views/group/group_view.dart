@@ -50,8 +50,7 @@ class GroupViewState extends State<GroupView> {
 
   Future<void> _showGroupDialog({Group? group}) async {
     final nameController = TextEditingController(text: group?.groupName ?? '');
-    final levelController =
-    TextEditingController(text: group?.groupAccessLevel ?? '1');
+    final levelController = TextEditingController(text: group?.groupAccessLevel ?? '1');
     bool status = group?.groupStatus ?? true;
 
     await showDialog(

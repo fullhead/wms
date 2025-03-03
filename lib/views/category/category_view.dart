@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:wms/models/category.dart';
+import 'package:wms/models/category.dart' as wms_category;
 import 'package:wms/presenters/category/category_presenter.dart';
 import 'package:wms/widgets/wms_drawer.dart';
 
@@ -12,7 +12,7 @@ class CategoryView extends StatefulWidget {
 
 class CategoryViewState extends State<CategoryView> {
   late final CategoryPresenter _presenter;
-  List<Category> _categories = [];
+  List<wms_category.Category> _categories = [];
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -48,8 +48,9 @@ class CategoryViewState extends State<CategoryView> {
     }
   }
 
-  Future<void> _showCategoryDialog({Category? category}) async {
-    final nameController = TextEditingController(text: category?.categoryName ?? '');
+  Future<void> _showCategoryDialog({wms_category.Category? category}) async {
+    final nameController =
+        TextEditingController(text: category?.categoryName ?? '');
 
     await showDialog(
       context: context,
@@ -57,7 +58,9 @@ class CategoryViewState extends State<CategoryView> {
         return StatefulBuilder(
           builder: (dialogContext, setStateDialog) {
             return AlertDialog(
-              title: Text(category == null ? 'Добавить категорию' : 'Редактировать категорию'),
+              title: Text(category == null
+                  ? 'Добавить категорию'
+                  : 'Редактировать категорию'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -110,13 +113,14 @@ class CategoryViewState extends State<CategoryView> {
     );
   }
 
-  Future<void> _confirmDelete(Category category) async {
+  Future<void> _confirmDelete(wms_category.Category category) async {
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (alertContext) {
         return AlertDialog(
           title: const Text('Подтверждение'),
-          content: Text('Вы уверены, что хотите удалить категорию "${category.categoryName}"?'),
+          content: Text(
+              'Вы уверены, что хотите удалить категорию "${category.categoryName}"?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(alertContext, false),
@@ -171,7 +175,8 @@ class CategoryViewState extends State<CategoryView> {
           final category = _categories[index];
           final isEvenRow = index % 2 == 0;
           return DataRow(
-            color: WidgetStateProperty.all(isEvenRow ? Colors.grey[50] : Colors.white),
+            color: WidgetStateProperty.all(
+                isEvenRow ? Colors.grey[50] : Colors.white),
             cells: [
               DataCell(Text(category.categoryName)),
               DataCell(
@@ -183,7 +188,8 @@ class CategoryViewState extends State<CategoryView> {
                       IconButton(
                         icon: const Icon(Icons.edit),
                         color: Colors.blue,
-                        onPressed: () => _showCategoryDialog(category: category),
+                        onPressed: () =>
+                            _showCategoryDialog(category: category),
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete),
@@ -213,21 +219,22 @@ class CategoryViewState extends State<CategoryView> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _errorMessage != null
-            ? Center(child: Text(_errorMessage!))
-            : LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.topLeft,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                  child: _buildStyledDataTable(),
-                ),
-              ),
-            );
-          },
-        ),
+                ? Center(child: Text(_errorMessage!))
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.topLeft,
+                          child: ConstrainedBox(
+                            constraints:
+                                BoxConstraints(minWidth: constraints.maxWidth),
+                            child: _buildStyledDataTable(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCategoryDialog(),

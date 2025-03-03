@@ -1,35 +1,42 @@
-import 'package:wms/models/category.dart';
-import 'package:wms/services/api_service.dart';
+import 'package:wms/models/category.dart' as wms_category;
+import 'package:wms/services/category_api_service.dart';
+import 'package:wms/core/constants.dart';
 
-/// Репозиторий для работы с категориями через REST API.
+/// Репозиторий для работы с категориями через CategoryAPIService.
 class CategoryRepository {
-  final APIService apiService;
+  final CategoryAPIService categoryAPIService;
 
-  CategoryRepository({required this.apiService});
+  CategoryRepository({CategoryAPIService? categoryAPIService})
+      : categoryAPIService = categoryAPIService ??
+            CategoryAPIService(baseUrl: AppConstants.apiBaseUrl);
 
   /// Получает список всех категорий.
-  Future<List<Category>> getAllCategory() async {
-    final List<Map<String, dynamic>> categoryMaps = await apiService.getAllCategory();
-    return categoryMaps.map((map) => Category.fromJson(map)).toList();
+  Future<List<wms_category.Category>> getAllCategory() async {
+    final List<Map<String, dynamic>> categoryMaps =
+        await categoryAPIService.getAllCategory();
+    return categoryMaps
+        .map((map) => wms_category.Category.fromJson(map))
+        .toList();
   }
 
   /// Получает категорию по её ID.
-  Future<Category> getCategoryById(int categoryId) async {
-    return await apiService.getCategoryById(categoryId);
+  Future<wms_category.Category> getCategoryById(int categoryId) async {
+    return await categoryAPIService.getCategoryById(categoryId);
   }
 
   /// Создает новую категорию.
-  Future<void> createCategory(Category category) async {
-    await apiService.createCategory(category.toJson());
+  Future<void> createCategory(wms_category.Category category) async {
+    await categoryAPIService.createCategory(category.toJson());
   }
 
   /// Обновляет данные категории.
-  Future<void> updateCategory(Category category) async {
-    await apiService.updateCategory(category.toJson(), category.categoryID);
+  Future<void> updateCategory(wms_category.Category category) async {
+    await categoryAPIService.updateCategory(
+        category.toJson(), category.categoryID);
   }
 
   /// Удаляет категорию по её ID.
   Future<void> deleteCategory(int categoryID) async {
-    await apiService.deleteCategory(categoryID);
+    await categoryAPIService.deleteCategory(categoryID);
   }
 }

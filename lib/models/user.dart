@@ -34,12 +34,8 @@ class User {
       userGroup: group,
       userAvatar: json['UserAvatar'] ?? '',
       userStatus: parseStatus(json['UserStatus']),
-      userCreationDate:
-          DateTime.tryParse(json['UserCreationDate']?.toString() ?? '') ??
-              DateTime.now(),
-      userLastLoginDate:
-          DateTime.tryParse(json['UserLastLoginDate']?.toString() ?? '') ??
-              DateTime.now(),
+      userCreationDate: DateTime.tryParse(json['UserCreationDate']?.toString() ?? '') ?? DateTime.now(),
+      userLastLoginDate: DateTime.tryParse(json['UserLastLoginDate']?.toString() ?? '') ?? DateTime.now(),
     );
   }
 

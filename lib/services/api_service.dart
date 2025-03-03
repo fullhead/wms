@@ -235,7 +235,6 @@ class APIService {
 
     if (response.statusCode == 200) {
       Map<String, dynamic> data = jsonDecode(response.body);
-      debugPrint('getCategoryById ($categoryId): ${response.body}');
       return wms_category.Category.fromJson(data);
     } else {
       final errorData = jsonDecode(response.body);
@@ -292,6 +291,119 @@ class APIService {
       final errorData = jsonDecode(response.body);
       debugPrint('deleteCategory error ($categoryID): ${response.body}');
       throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при удалении категории');
+    }
+  }
+
+  // ---------------------------
+  // Методы для работы с продукцией
+  // ---------------------------
+
+  Future<List<Map<String, dynamic>>> getAllProduct() async {
+    final headers = await _getHeaders();
+    final response =
+    await http.get(Uri.parse('$baseUrl/products'), headers: headers);
+
+    if (response.statusCode == 200) {
+      List<dynamic> data = jsonDecode(response.body);
+      debugPrint('getAllProduct: ${response.body}');
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      final errorData = jsonDecode(response.body);
+      debugPrint('getAllProduct error: ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при получении продукции');
+    }
+  }
+
+  Future<Map<String, dynamic>> getProductById(int productId) async {
+    final headers = await _getHeaders();
+    final response =
+    await http.get(Uri.parse('$baseUrl/products/$productId'),
+        headers: headers);
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> data = jsonDecode(response.body);
+      debugPrint('getProductById ($productId): ${response.body}');
+      return data;
+    } else {
+      final errorData = jsonDecode(response.body);
+      debugPrint('getProductById error ($productId): ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при получении продукции по ID');
+    }
+  }
+
+  Future<String> createProduct(Map<String, dynamic> productMap) async {
+    final headers = await _getHeaders();
+    debugPrint('Sending createProduct payload: ${jsonEncode(productMap)}');
+    final response = await http.post(
+      Uri.parse('$baseUrl/products'),
+      headers: headers,
+      body: jsonEncode(productMap),
+    );
+
+    if (response.statusCode == 201) {
+      debugPrint('createProduct: ${response.body}');
+      final data = jsonDecode(response.body);
+      return data['message'] ?? 'Продукция создана';
+    } else {
+      final errorData = jsonDecode(response.body);
+      debugPrint('createProduct error: ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при создании продукции');
+    }
+  }
+
+  Future<String> updateProduct(Map<String, dynamic> productMap, int productId) async {
+    final headers = await _getHeaders();
+    debugPrint('Sending updateProduct payload for productId $productId: ${jsonEncode(productMap)}');
+    final response = await http.put(
+      Uri.parse('$baseUrl/products/$productId'),
+      headers: headers,
+      body: jsonEncode(productMap),
+    );
+
+    if (response.statusCode == 200) {
+      debugPrint('updateProduct ($productId): ${response.body}');
+      final data = jsonDecode(response.body);
+      return data['message'] ?? 'Продукция обновлена';
+    } else {
+      final errorData = jsonDecode(response.body);
+      debugPrint('updateProduct error ($productId): ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при обновлении продукции');
+    }
+  }
+
+  Future<String> deleteProduct(int productID) async {
+    final headers = await _getHeaders();
+    final response = await http.delete(
+        Uri.parse('$baseUrl/products/$productID'),
+        headers: headers);
+    if (response.statusCode == 200) {
+      debugPrint('deleteProduct ($productID): ${response.body}');
+      final data = jsonDecode(response.body);
+      return data['message'] ?? 'Продукция удалена';
+    } else {
+      final errorData = jsonDecode(response.body);
+      debugPrint('deleteProduct error ($productID): ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при удалении продукции');
+    }
+  }
+
+  Future<String> uploadProductImage(String imagePath) async {
+    final token = await AuthStorage.getToken();
+    final uri = Uri.parse('$baseUrl/products/upload');
+    final request = http.MultipartRequest('POST', uri);
+    if (token != null) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+    // Поле 'image' должно совпадать с именем, ожидаемым на сервере
+    request.files.add(await http.MultipartFile.fromPath('image', imagePath));
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    if (response.statusCode == 201) {
+      final data = jsonDecode(response.body);
+      return data['path'];
+    } else {
+      final errorData = jsonDecode(response.body);
+      throw ApiException(errorData['error'] ?? 'Ошибка при загрузке изображения');
     }
   }
 }

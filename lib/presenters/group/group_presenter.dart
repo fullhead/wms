@@ -1,8 +1,6 @@
 import 'package:wms/core/constants.dart';
 import 'package:wms/models/group.dart';
 import 'package:wms/repositories/group_repository.dart';
-import 'package:wms/services/api_service.dart';
-
 
 /// Презентер для управления группами.
 class GroupPresenter {
@@ -10,8 +8,7 @@ class GroupPresenter {
 
   GroupPresenter({GroupRepository? groupRepository})
       : _groupRepository = groupRepository ??
-            GroupRepository(
-                apiService: APIService(baseUrl: AppConstants.apiBaseUrl));
+            GroupRepository(baseUrl: AppConstants.apiBaseUrl);
 
   /// Получает список всех групп.
   Future<List<Group>> fetchAllGroups() async {

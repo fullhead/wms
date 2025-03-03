@@ -2,8 +2,8 @@ import 'package:wms/core/constants.dart';
 import 'package:wms/models/user.dart';
 import 'package:wms/models/group.dart';
 import 'package:wms/repositories/user_repository.dart';
-import 'package:wms/services/api_service.dart';
-
+import 'package:wms/services/user_api_service.dart';
+import 'package:wms/services/group_api_service.dart';
 
 /// Презентер для управления пользователями.
 class UserPresenter {
@@ -11,8 +11,17 @@ class UserPresenter {
 
   UserPresenter({UserRepository? userRepository})
       : _userRepository = userRepository ??
-            UserRepository(
-                apiService: APIService(baseUrl: AppConstants.apiBaseUrl));
+            UserRepository(userAPIService:
+                  UserAPIService(baseUrl: AppConstants.apiBaseUrl),
+              groupAPIService:
+                  GroupAPIService(baseUrl: AppConstants.apiBaseUrl),
+            );
+
+  /// Геттер для доступа к UserAPIService.
+  UserAPIService get userApiService => _userRepository.userAPIService;
+
+  /// Геттер для доступа к GroupAPIService.
+  GroupAPIService get groupApiService => _userRepository.groupAPIService;
 
   /// Получает список всех пользователей.
   Future<List<User>> fetchAllUsers() async {
