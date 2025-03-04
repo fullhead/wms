@@ -218,7 +218,7 @@ class GroupViewState extends State<GroupView> {
   Widget _buildGroupCard(Group group) {
     return Card(
       elevation: 4,
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -227,7 +227,6 @@ class GroupViewState extends State<GroupView> {
           children: [
             // Первая строка: название группы
             Row(
-              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 Expanded(
                   child: Text(
@@ -238,25 +237,28 @@ class GroupViewState extends State<GroupView> {
               ],
             ),
             const SizedBox(height: 12),
-            // Вторая строка: статус слева и уровень доступа (прижат к правому краю) справа
+            // Вторая строка: статус и уровень доступа
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildStatusChip(group),
                 Text(
-                  "Уровень: ${group.groupAccessLevel}  ",
+                  "Уровень: ${group.groupAccessLevel}",
                   style: const TextStyle(fontSize: 12),
                 ),
               ],
             ),
             const SizedBox(height: 4),
-            // Третья строка: дата создания слева и кнопки действий справа
+            // Третья строка: дата создания и кнопки действий
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  "Дата создание: ${group.groupCreationDate.toLocal().toString().split('.')[0]}",
-                  style: const TextStyle(fontSize: 13),
+                Flexible(
+                  child: Text(
+                    "Дата создание: ${group.groupCreationDate.toLocal().toString().split('.')[0]}",
+                    style: const TextStyle(fontSize: 13),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 Row(
                   children: [
@@ -312,13 +314,23 @@ class GroupViewState extends State<GroupView> {
         title: const Text('Группы'),
       ),
       drawer: const WmsDrawer(),
-      body: RefreshIndicator(
-        onRefresh: _loadGroups,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _errorMessage != null
-            ? Center(child: Text(_errorMessage!))
-            : _buildGroupList(),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Ограничиваем максимальную ширину содержимого для больших экранов
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: RefreshIndicator(
+                onRefresh: _loadGroups,
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _errorMessage != null
+                    ? Center(child: Text(_errorMessage!))
+                    : _buildGroupList(),
+              ),
+            ),
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showGroupDialog(),

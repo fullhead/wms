@@ -77,18 +77,18 @@ class ProductViewState extends State<ProductView> {
               leading: const Icon(Icons.photo_library),
               title: const Text('Выбрать из галереи'),
               onTap: () async {
-                Navigator.of(context).pop(await _picker
-                    .pickImage(source: ImageSource.gallery)
-                    .then((pickedFile) => pickedFile != null ? File(pickedFile.path) : null));
+                final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                if (!mounted) return;
+                Navigator.of(context).pop(pickedFile != null ? File(pickedFile.path) : null);
               },
             ),
             ListTile(
               leading: const Icon(Icons.photo_camera),
               title: const Text('Сделать фото'),
               onTap: () async {
-                Navigator.of(context).pop(await _picker
-                    .pickImage(source: ImageSource.camera)
-                    .then((pickedFile) => pickedFile != null ? File(pickedFile.path) : null));
+                final pickedFile = await _picker.pickImage(source: ImageSource.camera);
+                if (!mounted) return;
+                Navigator.of(context).pop(pickedFile != null ? File(pickedFile.path) : null);
               },
             ),
           ],
@@ -173,15 +173,19 @@ class ProductViewState extends State<ProductView> {
     );
   }
 
-
   void _showProductDetails(Product product) {
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (ctx) {
         final size = MediaQuery.of(ctx).size;
+        final isDesktop = size.width > 800;
+        final dialogWidth = isDesktop ? size.width * 0.5 : size.width * 0.9;
+        final dialogHeight = isDesktop ? size.height * 0.6 : size.height * 0.46;
+        final imageSize = isDesktop ? 750.0 : 300.0;
+
         return AlertDialog(
-          insetPadding: const EdgeInsets.all(10),
+          insetPadding: EdgeInsets.zero,
           contentPadding: const EdgeInsets.all(10),
           titlePadding: const EdgeInsets.only(top: 10, left: 10, right: 10),
           title: Row(
@@ -202,20 +206,18 @@ class ProductViewState extends State<ProductView> {
             ],
           ),
           content: SizedBox(
-            width: size.width * 0.95,
-            height: size.height * 0.6,
+            width: dialogWidth,
+            height: dialogHeight,
             child: SingleChildScrollView(
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  CachedNetworkImage(
-                    imageUrl: AppConstants.apiBaseUrl + product.productImage,
-                    httpHeaders: _token != null ? {"Authorization": "Bearer $_token"} : {},
-                    height: 400,
-                    width: 400,
-                    fit: BoxFit.contain,
-                    placeholder: (context, url) => const CircularProgressIndicator(),
-                    errorWidget: (context, url, error) => const Icon(Icons.error),
+                  _buildDialogImage(
+                    fileImage: null,
+                    imageUrl: product.productImage,
+                    token: _token,
+                    width: imageSize,
+                    height: imageSize,
                   ),
                   const SizedBox(height: 30),
                   Row(
@@ -230,7 +232,7 @@ class ProductViewState extends State<ProductView> {
                         label: const Text("Редактировать", style: TextStyle(color: Colors.blue)),
                       ),
                       TextButton.icon(
-                        onPressed: () async {
+                        onPressed: () {
                           Navigator.of(ctx).pop();
                           _confirmDeleteProduct(product);
                         },
@@ -259,7 +261,8 @@ class ProductViewState extends State<ProductView> {
 
     try {
       allCategories = await _loadCategoriesForProduct();
-      final foundIndex = allCategories.indexWhere((cat) => cat.categoryID == product.productCategory.categoryID);
+      final foundIndex = allCategories.indexWhere(
+              (cat) => cat.categoryID == product.productCategory.categoryID);
       if (foundIndex >= 0) {
         editedCategory = allCategories[foundIndex];
       } else if (allCategories.isNotEmpty) {
@@ -276,20 +279,26 @@ class ProductViewState extends State<ProductView> {
       return;
     }
     if (!mounted) return;
+
     showDialog(
       context: context,
       builder: (inDialogContext) {
         final size = MediaQuery.of(inDialogContext).size;
+        final isDesktop = size.width > 800;
+        final dialogWidth = isDesktop ? size.width * 0.5 : size.width * 0.95;
+        final dialogHeight = isDesktop ? size.height * 0.6 : size.height * 0.7;
+        final imageHeight = isDesktop ? 430.0 : 300.0;
+
         return AlertDialog(
-          insetPadding: const EdgeInsets.all(10),
+          insetPadding: EdgeInsets.zero,
           contentPadding: const EdgeInsets.all(10),
           title: const Text("Редактировать продукт"),
-          content: StatefulBuilder(
-            builder: (inDialogContext, setStateDialog) {
-              return SizedBox(
-                width: size.width * 0.95,
-                height: size.height * 0.7,
-                child: SingleChildScrollView(
+          content: SizedBox(
+            width: dialogWidth,
+            height: dialogHeight,
+            child: StatefulBuilder(
+              builder: (inDialogContext, setStateDialog) {
+                return SingleChildScrollView(
                   child: Form(
                     key: editFormKey,
                     child: Column(
@@ -303,26 +312,12 @@ class ProductViewState extends State<ProductView> {
                               setStateDialog(() {});
                             }
                           },
-                          child: Container(
-                            height: 430,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: editedImage != null
-                                ? Image.file(
-                              editedImage!,
-                              fit: BoxFit.contain,
-                              width: double.infinity,
-                            )
-                                : CachedNetworkImage(
-                              imageUrl: AppConstants.apiBaseUrl + product.productImage,
-                              httpHeaders: _token != null ? {"Authorization": "Bearer $_token"} : {},
-                              fit: BoxFit.contain,
-                              width: double.infinity,
-                              placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                              errorWidget: (context, url, error) => const Icon(Icons.error),
-                            ),
+                          child: _buildDialogImage(
+                            fileImage: editedImage,
+                            imageUrl: product.productImage,
+                            token: _token,
+                            width: double.infinity,
+                            height: imageHeight,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -381,17 +376,13 @@ class ProductViewState extends State<ProductView> {
                       ],
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                if (inDialogContext.mounted) {
-                  Navigator.of(inDialogContext).pop();
-                }
-              },
+              onPressed: () => Navigator.of(inDialogContext).pop(),
               child: const Text("Отмена"),
             ),
             TextButton(
@@ -450,8 +441,8 @@ class ProductViewState extends State<ProductView> {
     Category? newCategory;
     File? newImage;
     final TextEditingController barcodeController = TextEditingController();
-
     List<Category> allCategories = [];
+
     try {
       allCategories = await _loadCategoriesForProduct();
       if (allCategories.isNotEmpty) {
@@ -468,20 +459,25 @@ class ProductViewState extends State<ProductView> {
       return;
     }
     if (!mounted) return;
+
     showDialog(
       context: context,
       builder: (inDialogContext) {
         final size = MediaQuery.of(inDialogContext).size;
+        final isDesktop = size.width > 800;
+        final dialogWidth = isDesktop ? size.width * 0.5 : size.width * 0.95;
+        final dialogHeight = isDesktop ? size.height * 0.6 : size.height * 0.7;
+
         return AlertDialog(
           insetPadding: const EdgeInsets.all(10),
           contentPadding: const EdgeInsets.all(10),
           title: const Text("Создать продукт"),
-          content: StatefulBuilder(
-            builder: (inDialogContext, setStateDialog) {
-              return SizedBox(
-                width: size.width * 0.95,
-                height: size.height * 0.7,
-                child: SingleChildScrollView(
+          content: SizedBox(
+            width: dialogWidth,
+            height: dialogHeight,
+            child: StatefulBuilder(
+              builder: (inDialogContext, setStateDialog) {
+                return SingleChildScrollView(
                   child: Form(
                     key: createFormKey,
                     child: Column(
@@ -495,19 +491,12 @@ class ProductViewState extends State<ProductView> {
                               setStateDialog(() {});
                             }
                           },
-                          child: Container(
-                            height: 250,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: newImage != null
-                                ? Image.file(
-                              newImage!,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                            )
-                                : const Center(child: Text("Изображение не выбрано")),
+                          child: _buildDialogImage(
+                            fileImage: newImage,
+                            imageUrl: "",
+                            width: isDesktop ? 300 : 250,
+                            height: isDesktop ? 300 : 250,
+                            showPlaceholder: true,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -564,9 +553,9 @@ class ProductViewState extends State<ProductView> {
                       ],
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
           actions: [
             TextButton(
@@ -667,6 +656,54 @@ class ProductViewState extends State<ProductView> {
     }
   }
 
+  Widget _buildDialogImage({
+    File? fileImage,
+    String? imageUrl,
+    String? token,
+    bool showPlaceholder = false,
+    double width = 250,
+    double height = 250,
+  }) {
+    if (fileImage != null) {
+      return Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: FileImage(fileImage),
+            fit: BoxFit.cover,
+          ),
+          color: Colors.grey[300],
+          borderRadius: BorderRadius.circular(4),
+        ),
+      );
+    } else if (imageUrl != null && imageUrl.isNotEmpty) {
+      return Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: CachedNetworkImageProvider(
+              AppConstants.apiBaseUrl + imageUrl,
+              headers: token != null ? {"Authorization": "Bearer $token"} : null,
+            ),
+            fit: BoxFit.cover,
+          ),
+          color: Colors.grey[300],
+          borderRadius: BorderRadius.circular(4),
+        ),
+      );
+    }
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: showPlaceholder ? const Icon(Icons.image, size: 50) : null,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -715,59 +752,74 @@ class ProductViewState extends State<ProductView> {
         ],
       ),
       drawer: const WmsDrawer(),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-        onRefresh: _loadProducts,
-        child: ListView.builder(
-          itemCount: displayedProducts.length,
-          itemBuilder: (context, index) {
-            final product = displayedProducts[index];
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
-                leading: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: CachedNetworkImage(
-                    imageUrl: AppConstants.apiBaseUrl + product.productImage,
-                    httpHeaders: _token != null ? {"Authorization": "Bearer $_token"} : {},
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                title: Text(
-                  product.productName,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 10.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.document_scanner, size: 16),
-                          const SizedBox(width: 1),
-                          Text(product.productBarcode, style: const TextStyle(fontSize: 12)),
-                        ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : RefreshIndicator(
+                onRefresh: _loadProducts,
+                child: ListView.builder(
+                  itemCount: displayedProducts.length,
+                  itemBuilder: (context, index) {
+                    final product = displayedProducts[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(8.0),
+                          child: CachedNetworkImage(
+                            imageUrl: AppConstants.apiBaseUrl + product.productImage,
+                            httpHeaders: _token != null ? {"Authorization": "Bearer $_token"} : {},
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        title: Text(
+                          product.productName,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 10.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.document_scanner, size: 16),
+                                  const SizedBox(width: 1),
+                                  Text(
+                                    product.productBarcode,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  const Icon(Icons.category, size: 16),
+                                  const SizedBox(width: 1),
+                                  Text(
+                                    product.productCategory.categoryName,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        onTap: () => _showProductDetails(product),
                       ),
-                      Row(
-                        children: [
-                          const Icon(Icons.category, size: 16),
-                          const SizedBox(width: 1),
-                          Text(product.productCategory.categoryName, style: const TextStyle(fontSize: 12)),
-                        ],
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-                onTap: () => _showProductDetails(product),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateProductDialog,

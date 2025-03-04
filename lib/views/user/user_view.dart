@@ -99,131 +99,184 @@ class UserViewState extends State<UserView> {
     );
   }
 
-
   void _showUserDetails(User user) {
     showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (ctx) => AlertDialog(
-        insetPadding: const EdgeInsets.all(10),
-        contentPadding: const EdgeInsets.all(10),
-        titlePadding: const EdgeInsets.only(top: 10, left: 10, right: 10),
-        title: Row(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16.0),
-                child: Text(
-                  user.userFullname,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.of(ctx).pop(),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      builder: (ctx) {
+        final size = MediaQuery.of(ctx).size;
+        final isDesktop = size.width > 800;
+        final dialogWidth = isDesktop ? size.width * 0.4 : size.width * 0.9;
+        final dialogHeight = size.height * 0.76;
+        final imageSize = isDesktop ? 650.0 : 300.0;
+
+        return AlertDialog(
+          insetPadding: EdgeInsets.zero,
+          contentPadding: const EdgeInsets.all(10),
+          titlePadding: const EdgeInsets.only(top: 10, left: 10, right: 10),
+          title: Row(
             children: [
-              Center(
-                child: _buildDialogImage(
-                  fileImage: null,
-                  imageUrl: user.userAvatar,
-                  token: _token,
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 16.0),
+                  child: Text(
+                    user.userFullname,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
-              const SizedBox(height: 20),
-              const Divider(height: 20),
-              Row(
-                children: [
-                  const Icon(Icons.login, size: 16),
-                  const SizedBox(width: 4),
-                  const Text("Логин:",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(width: 4),
-                  Text(user.userName, style: const TextStyle(fontSize: 16)),
-                ],
-              ),
-              const Divider(height: 20),
-              Row(
-                children: [
-                  const Icon(Icons.info, size: 16),
-                  const SizedBox(width: 4),
-                  const Text("Статус:",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(width: 4),
-                  _buildStatusChip(user),
-                ],
-              ),
-              const Divider(height: 20),
-              Row(
-                children: [
-                  const Icon(Icons.group, size: 16),
-                  const SizedBox(width: 4),
-                  const Text("Группа:",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(width: 4),
-                  Text(user.userGroup.groupName, style: const TextStyle(fontSize: 16)),
-                ],
-              ),
-              const Divider(height: 20),
-              Row(
-                children: [
-                  const Icon(Icons.calendar_today, size: 16),
-                  const SizedBox(width: 4),
-                  const Text("Дата создания:",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(width: 4),
-                  Text(
-                    user.userCreationDate.toLocal().toString().split('.')[0],
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ],
-              ),
-              const Divider(height: 20),
-              Row(
-                children: [
-                  const Icon(Icons.access_time, size: 16),
-                  const SizedBox(width: 4),
-                  const Text("Последний вход:",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(width: 4),
-                  Text(
-                    user.userLastLoginDate.toLocal().toString().split('.')[0],
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ],
-              ),
-              const Divider(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  TextButton.icon(
-                    onPressed: () {
-                      Navigator.of(ctx).pop();
-                      _showEditUserDialog(user);
-                    },
-                    icon: const Icon(Icons.edit, color: Colors.blue),
-                    label: const Text("Редактировать", style: TextStyle(color: Colors.blue)),
-                  ),
-                  TextButton.icon(
-                    onPressed: () {
-                      Navigator.of(ctx).pop();
-                      _confirmDeleteUser(user);
-                    },
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    label: const Text("Удалить", style: TextStyle(color: Colors.red)),
-                  ),
-                ],
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.of(ctx).pop(),
               ),
             ],
           ),
-        ),
-      ),
+          content: SizedBox(
+            width: dialogWidth,
+            height: dialogHeight,
+            child: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: dialogHeight),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: _buildDialogImage(
+                            fileImage: null,
+                            imageUrl: user.userAvatar,
+                            token: _token,
+                            width: imageSize,
+                            height: imageSize,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const Divider(height: 20),
+                        Row(
+                          children: [
+                            const Icon(Icons.login, size: 16),
+                            const SizedBox(width: 4),
+                            const Text(
+                              "Логин:",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                user.userName,
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 20),
+                        Row(
+                          children: [
+                            const Icon(Icons.info, size: 16),
+                            const SizedBox(width: 4),
+                            const Text(
+                              "Статус:",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(width: 4),
+                            _buildStatusChip(user),
+                          ],
+                        ),
+                        const Divider(height: 20),
+                        Row(
+                          children: [
+                            const Icon(Icons.group, size: 16),
+                            const SizedBox(width: 4),
+                            const Text(
+                              "Группа:",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                user.userGroup.groupName,
+                                style: const TextStyle(fontSize: 16),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 20),
+                        Row(
+                          children: [
+                            const Icon(Icons.calendar_today, size: 16),
+                            const SizedBox(width: 4),
+                            const Text(
+                              "Дата создания:",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                user.userCreationDate.toLocal().toString().split('.')[0],
+                                style: const TextStyle(fontSize: 16),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 20),
+                        Row(
+                          children: [
+                            const Icon(Icons.access_time, size: 16),
+                            const SizedBox(width: 4),
+                            const Text(
+                              "Последний вход:",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                user.userLastLoginDate.toLocal().toString().split('.')[0],
+                                style: const TextStyle(fontSize: 16),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 20),
+                      ],
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          TextButton.icon(
+                            onPressed: () {
+                              Navigator.of(ctx).pop();
+                              _showEditUserDialog(user);
+                            },
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            label: const Text("Редактировать", style: TextStyle(color: Colors.blue)),
+                          ),
+                          TextButton.icon(
+                            onPressed: () {
+                              Navigator.of(ctx).pop();
+                              _confirmDeleteUser(user);
+                            },
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            label: const Text("Удалить", style: TextStyle(color: Colors.red)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -241,8 +294,7 @@ class UserViewState extends State<UserView> {
 
     try {
       allGroups = await _loadGroupsForUser();
-      final foundIndex =
-      allGroups.indexWhere((g) => g.groupID == user.userGroup.groupID);
+      final foundIndex = allGroups.indexWhere((g) => g.groupID == user.userGroup.groupID);
       if (foundIndex >= 0) {
         selectedGroup = allGroups[foundIndex];
       } else if (allGroups.isNotEmpty) {
@@ -256,17 +308,22 @@ class UserViewState extends State<UserView> {
       return;
     }
     if (!mounted) return;
+
     showDialog(
       context: context,
       builder: (inDialogContext) {
         final size = MediaQuery.of(inDialogContext).size;
+        final isDesktop = size.width > 800;
+        final dialogWidth = isDesktop ? size.width * 0.6 : size.width * 0.95;
+        final dialogHeight = isDesktop ? size.height * 0.6 : size.height * 0.78;
+
         return AlertDialog(
-          insetPadding: const EdgeInsets.all(10),
+          insetPadding: EdgeInsets.zero,
           contentPadding: const EdgeInsets.all(10),
           title: const Text("Редактировать пользователя"),
           content: SizedBox(
-            width: size.width * 0.95,
-            height: size.height * 0.7,
+            width: dialogWidth,
+            height: dialogHeight,
             child: StatefulBuilder(
               builder: (inDialogContext, setStateDialog) {
                 return SingleChildScrollView(
@@ -304,18 +361,22 @@ class UserViewState extends State<UserView> {
                         TextFormField(
                           controller: fullNameController,
                           decoration: const InputDecoration(labelText: "Полное имя"),
-                          validator: (value) => value == null || value.isEmpty ? "Введите полное имя" : null,
+                          validator: (value) =>
+                          value == null || value.isEmpty ? "Введите полное имя" : null,
                         ),
                         const SizedBox(height: 10),
                         TextFormField(
                           controller: usernameController,
                           decoration: const InputDecoration(labelText: "Логин"),
-                          validator: (value) => value == null || value.isEmpty ? "Введите логин" : null,
+                          validator: (value) =>
+                          value == null || value.isEmpty ? "Введите логин" : null,
                         ),
                         const SizedBox(height: 10),
                         TextFormField(
                           controller: passwordController,
-                          decoration: const InputDecoration(labelText: "Новый пароль (если нужно изменить)"),
+                          decoration: const InputDecoration(
+                            labelText: "Новый пароль (если нужно изменить)",
+                          ),
                           obscureText: true,
                         ),
                         const SizedBox(height: 10),
@@ -364,7 +425,9 @@ class UserViewState extends State<UserView> {
                   try {
                     String newAvatar = imagePath;
                     if (editedImage != null) {
-                      newAvatar = await _userPresenter.userApiService.uploadUserAvatar(editedImage!.path);
+                      newAvatar = await _userPresenter.userApiService.uploadUserAvatar(
+                        editedImage!.path,
+                      );
                     }
                     final responseMessage = await _userPresenter.updateUser(
                       user,
@@ -372,7 +435,9 @@ class UserViewState extends State<UserView> {
                       username: usernameController.text.trim(),
                       avatar: newAvatar,
                       status: status,
-                      password: passwordController.text.trim().isEmpty ? null : passwordController.text.trim(),
+                      password: passwordController.text.trim().isEmpty
+                          ? null
+                          : passwordController.text.trim(),
                       group: selectedGroup,
                     );
                     if (inDialogContext.mounted) {
@@ -387,7 +452,7 @@ class UserViewState extends State<UserView> {
                         ),
                       );
                     }
-                  }catch (e) {
+                  } catch (e) {
                     if (inDialogContext.mounted) {
                       Navigator.of(inDialogContext).pop();
                       ScaffoldMessenger.of(inDialogContext).showSnackBar(
@@ -426,22 +491,28 @@ class UserViewState extends State<UserView> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Ошибка загрузки групп: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Ошибка загрузки групп: $e")),
+      );
       return;
     }
     if (!mounted) return;
+
     showDialog(
       context: context,
       builder: (inDialogContext) {
         final size = MediaQuery.of(inDialogContext).size;
+        final isDesktop = size.width > 800;
+        final dialogWidth = isDesktop ? size.width * 0.6 : size.width * 0.95;
+        final dialogHeight = isDesktop ? size.height * 0.6 : size.height * 0.78;
+
         return AlertDialog(
-          insetPadding: const EdgeInsets.all(10),
+          insetPadding: EdgeInsets.zero,
           contentPadding: const EdgeInsets.all(10),
           title: const Text("Создать пользователя"),
           content: SizedBox(
-            width: size.width * 0.95,
-            height: size.height * 0.7,
+            width: dialogWidth,
+            height: dialogHeight,
             child: StatefulBuilder(
               builder: (inDialogContext, setStateDialog) {
                 return SingleChildScrollView(
@@ -478,20 +549,23 @@ class UserViewState extends State<UserView> {
                         TextFormField(
                           controller: fullNameController,
                           decoration: const InputDecoration(labelText: "Полное имя"),
-                          validator: (value) => value == null || value.isEmpty ? "Введите полное имя" : null,
+                          validator: (value) =>
+                          value == null || value.isEmpty ? "Введите полное имя" : null,
                         ),
                         const SizedBox(height: 10),
                         TextFormField(
                           controller: usernameController,
                           decoration: const InputDecoration(labelText: "Логин"),
-                          validator: (value) => value == null || value.isEmpty ? "Введите логин" : null,
+                          validator: (value) =>
+                          value == null || value.isEmpty ? "Введите логин" : null,
                         ),
                         const SizedBox(height: 10),
                         TextFormField(
                           controller: passwordController,
                           decoration: const InputDecoration(labelText: "Пароль"),
                           obscureText: true,
-                          validator: (value) => value == null || value.isEmpty ? "Введите пароль" : null,
+                          validator: (value) =>
+                          value == null || value.isEmpty ? "Введите пароль" : null,
                         ),
                         const SizedBox(height: 10),
                         DropdownButtonFormField<Group>(
@@ -623,7 +697,6 @@ class UserViewState extends State<UserView> {
     }
   }
 
-
   Widget _buildStatusChip(User user) {
     final isActive = user.userStatus;
     return Container(
@@ -647,11 +720,13 @@ class UserViewState extends State<UserView> {
     String? imageUrl,
     String? token,
     bool showPlaceholder = false,
+    double width = 250,
+    double height = 250,
   }) {
     if (fileImage != null) {
       return Container(
-        width: 250,
-        height: 250,
+        width: width,
+        height: height,
         decoration: BoxDecoration(
           image: DecorationImage(
             image: FileImage(fileImage),
@@ -663,8 +738,8 @@ class UserViewState extends State<UserView> {
       );
     } else if (imageUrl != null && imageUrl.isNotEmpty) {
       return Container(
-        width: 250,
-        height: 250,
+        width: width,
+        height: height,
         decoration: BoxDecoration(
           image: DecorationImage(
             image: CachedNetworkImageProvider(
@@ -679,8 +754,8 @@ class UserViewState extends State<UserView> {
       );
     }
     return Container(
-      width: 250,
-      height: 250,
+      width: width,
+      height: height,
       decoration: BoxDecoration(
         color: Colors.grey[300],
         borderRadius: BorderRadius.circular(4),
@@ -696,64 +771,84 @@ class UserViewState extends State<UserView> {
         title: const Text('Пользователи'),
       ),
       drawer: const WmsDrawer(),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-        onRefresh: _loadUsers,
-        child: ListView.builder(
-          itemCount: _users.length,
-          itemBuilder: (context, index) {
-            final user = _users[index];
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                leading: CircleAvatar(
-                  radius: 30,
-                  backgroundImage: CachedNetworkImageProvider(
-                    AppConstants.apiBaseUrl + user.userAvatar,
-                    headers: _token != null ? {"Authorization": "Bearer $_token"} : null,
-                  ),
-                  backgroundColor: Colors.grey[300],
-                ),
-                title: Text(
-                  user.userFullname,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(user.userName, style: const TextStyle(fontSize: 14)),
-                        Text(
-                          user.userLastLoginDate.toLocal().toString().split('.')[0],
-                          style: const TextStyle(fontSize: 10),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : RefreshIndicator(
+                onRefresh: _loadUsers,
+                child: ListView.builder(
+                  itemCount: _users.length,
+                  itemBuilder: (context, index) {
+                    final user = _users[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                        leading: CircleAvatar(
+                          radius: 30,
+                          backgroundImage: CachedNetworkImageProvider(
+                            AppConstants.apiBaseUrl + user.userAvatar,
+                            headers: _token != null ? {"Authorization": "Bearer $_token"} : null,
+                          ),
+                          backgroundColor: Colors.grey[300],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildStatusChip(user),
-                        Row(
+                        title: Text(
+                          user.userFullname,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.group, size: 16),
-                            const SizedBox(width: 4),
-                            Text(user.userGroup.groupName, style: const TextStyle(fontSize: 12)),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    user.userName,
+                                    style: const TextStyle(fontSize: 14),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Text(
+                                  user.userLastLoginDate.toLocal().toString().split('.')[0],
+                                  style: const TextStyle(fontSize: 10),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                _buildStatusChip(user),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.group, size: 16),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      user.userGroup.groupName,
+                                      style: const TextStyle(fontSize: 12),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            )
                           ],
                         ),
-                      ],
-                    )
-                  ],
+                        onTap: () => _showUserDetails(user),
+                      ),
+                    );
+                  },
                 ),
-                onTap: () => _showUserDetails(user),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateUserDialog,

@@ -64,17 +64,20 @@ class CategoryViewState extends State<CategoryView> {
                   ? 'Добавить категорию'
                   : 'Редактировать категорию'),
               content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Название',
-                        border: OutlineInputBorder(),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Название',
+                          border: OutlineInputBorder(),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               actions: [
@@ -236,13 +239,22 @@ class CategoryViewState extends State<CategoryView> {
         title: const Text('Категории'),
       ),
       drawer: const WmsDrawer(),
-      body: RefreshIndicator(
-        onRefresh: _loadCategories,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _errorMessage != null
-            ? Center(child: Text(_errorMessage!))
-            : _buildCategoryList(),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: RefreshIndicator(
+                onRefresh: _loadCategories,
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _errorMessage != null
+                    ? Center(child: Text(_errorMessage!))
+                    : _buildCategoryList(),
+              ),
+            ),
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCategoryDialog(),
