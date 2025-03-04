@@ -25,34 +25,29 @@ class UserAPIService {
   /// Получает список всех пользователей.
   Future<List<Map<String, dynamic>>> getAllUsers() async {
     final headers = await _getHeaders();
-    final response =
-        await http.get(Uri.parse('$baseUrl/users'), headers: headers);
-    debugPrint('UserAPIService.getAllUsers: ${response.body}');
+    final response = await http.get(Uri.parse('$baseUrl/users'), headers: headers);
     if (response.statusCode == 200) {
       List<dynamic> data = jsonDecode(response.body);
+      debugPrint('UserAPIService.getAllUsers: ${response.body}');
       return data.cast<Map<String, dynamic>>();
     } else {
       final errorData = jsonDecode(response.body);
       debugPrint('UserAPIService.getAllUsers error: ${response.body}');
-      throw ApiException(
-          errorData['error'] ?? 'Ошибка при получении пользователей');
+      throw ApiException(errorData['error'] ?? 'Ошибка при получении пользователей');
     }
   }
 
   /// Получает данные пользователя по его ID.
   Future<Map<String, dynamic>> getUserById(int userId) async {
     final headers = await _getHeaders();
-    final response =
-        await http.get(Uri.parse('$baseUrl/users/$userId'), headers: headers);
-    debugPrint('UserAPIService.getUserById ($userId): ${response.body}');
+    final response = await http.get(Uri.parse('$baseUrl/users/$userId'), headers: headers);
     if (response.statusCode == 200) {
+      debugPrint('UserAPIService.getUserById ($userId): ${response.body}');
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
       final errorData = jsonDecode(response.body);
-      debugPrint(
-          'UserAPIService.getUserById error ($userId): ${response.body}');
-      throw ApiException(
-          errorData['error'] ?? 'Ошибка при получении пользователя');
+      debugPrint('UserAPIService.getUserById error ($userId): ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Ошибка при получении пользователя');
     }
   }
 
@@ -65,60 +60,54 @@ class UserAPIService {
       headers: headers,
       body: jsonEncode(userMap),
     );
-    debugPrint('UserAPIService.createUser: ${response.body}');
     if (response.statusCode == 201) {
+      debugPrint('UserAPIService.createUser: ${response.body}');
       final data = jsonDecode(response.body);
       return data['message'] ?? 'Пользователь создан';
     } else {
       final errorData = jsonDecode(response.body);
       debugPrint('UserAPIService.createUser error: ${response.body}');
-      throw ApiException(
-          errorData['error'] ?? 'Ошибка при создании пользователя');
+      throw ApiException(errorData['error'] ?? 'Ошибка при создании пользователя');
     }
   }
 
   /// Обновляет данные пользователя.
   Future<String> updateUser(Map<String, dynamic> userMap, int userId) async {
     final headers = await _getHeaders();
-    debugPrint(
-        'UserAPIService.updateUser payload for userId $userId: ${jsonEncode(userMap)}');
+    debugPrint('UserAPIService.updateUser payload for userId $userId: ${jsonEncode(userMap)}');
     final response = await http.put(
       Uri.parse('$baseUrl/users/$userId'),
       headers: headers,
       body: jsonEncode(userMap),
     );
-    debugPrint('UserAPIService.updateUser ($userId): ${response.body}');
     if (response.statusCode == 200) {
+      debugPrint('UserAPIService.updateUser ($userId): ${response.body}');
       final data = jsonDecode(response.body);
       return data['message'] ?? 'Пользователь обновлён';
     } else {
       final errorData = jsonDecode(response.body);
       debugPrint('UserAPIService.updateUser error ($userId): ${response.body}');
-      throw ApiException(
-          errorData['error'] ?? 'Ошибка при обновлении пользователя');
+      throw ApiException(errorData['error'] ?? 'Ошибка при обновлении пользователя');
     }
   }
 
   /// Удаляет пользователя по его ID.
   Future<String> deleteUser(int userId) async {
     final headers = await _getHeaders();
-    final response = await http.delete(Uri.parse('$baseUrl/users/$userId'),
-        headers: headers);
-    debugPrint('UserAPIService.deleteUser ($userId): ${response.body}');
+    final response = await http.delete(Uri.parse('$baseUrl/users/$userId'), headers: headers);
     if (response.statusCode == 200) {
+      debugPrint('UserAPIService.deleteUser ($userId): ${response.body}');
       final data = jsonDecode(response.body);
       return data['message'] ?? 'Пользователь удалён';
     } else {
       final errorData = jsonDecode(response.body);
       debugPrint('UserAPIService.deleteUser error ($userId): ${response.body}');
-      throw ApiException(
-          errorData['error'] ?? 'Ошибка при удалении пользователя');
+      throw ApiException(errorData['error'] ?? 'Ошибка при удалении пользователя');
     }
   }
 
   /// Авторизует пользователя, отправляя его учетные данные.
-  Future<Map<String, dynamic>> loginUser(
-      Map<String, dynamic> credentials) async {
+  Future<Map<String, dynamic>> loginUser(Map<String, dynamic> credentials) async {
     final headers = await _getHeaders(auth: false);
     debugPrint('UserAPIService.loginUser payload: ${jsonEncode(credentials)}');
     final response = await http.post(
@@ -126,8 +115,8 @@ class UserAPIService {
       headers: headers,
       body: jsonEncode(credentials),
     );
-    debugPrint('UserAPIService.loginUser: ${response.body}');
     if (response.statusCode == 200) {
+      debugPrint('UserAPIService.loginUser: ${response.body}');
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
       final errorData = jsonDecode(response.body);
@@ -147,8 +136,8 @@ class UserAPIService {
     request.files.add(await http.MultipartFile.fromPath('avatar', imagePath));
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
-    debugPrint('UserAPIService.uploadUserAvatar: ${response.body}');
     if (response.statusCode == 201) {
+      debugPrint('UserAPIService.uploadUserAvatar: ${response.body}');
       final data = jsonDecode(response.body);
       return data['path'];
     } else {

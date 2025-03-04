@@ -21,7 +21,7 @@ class GroupPresenter {
   }
 
   /// Создает новую группу.
-  Future<void> createGroup({
+  Future<String> createGroup({
     required String groupName,
     required String groupAccessLevel,
     bool groupStatus = true,
@@ -33,11 +33,11 @@ class GroupPresenter {
       groupStatus: groupStatus,
       groupCreationDate: DateTime.now(),
     );
-    await _groupRepository.createGroup(group);
+    return await _groupRepository.createGroup(group);
   }
 
   /// Обновляет данные группы.
-  Future<void> updateGroup(
+  Future<String> updateGroup(
     Group group, {
     String? name,
     String? accessLevel,
@@ -46,11 +46,11 @@ class GroupPresenter {
     if (name != null) group.groupName = name;
     if (accessLevel != null) group.groupAccessLevel = accessLevel;
     if (status != null) group.groupStatus = status;
-    await _groupRepository.updateGroup(group);
+    return await _groupRepository.updateGroup(group);
   }
 
   /// Удаляет группу.
-  Future<void> deleteGroup(Group group) async {
-    await _groupRepository.deleteGroup(group.groupID);
+  Future<String> deleteGroup(Group group) async {
+    return await _groupRepository.deleteGroup(group.groupID);
   }
 }

@@ -20,10 +20,10 @@ class GroupViewState extends State<GroupView> {
   void initState() {
     super.initState();
     _presenter = GroupPresenter();
-    _fetchGroups();
+    _loadGroups();
   }
 
-  Future<void> _fetchGroups() async {
+  Future<void> _loadGroups() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -59,6 +59,7 @@ class GroupViewState extends State<GroupView> {
         return StatefulBuilder(
           builder: (dialogContext, setStateDialog) {
             return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               title: Text(group == null ? 'Добавить группу' : 'Редактировать группу'),
               content: SingleChildScrollView(
                 child: Column(
@@ -66,12 +67,18 @@ class GroupViewState extends State<GroupView> {
                   children: [
                     TextField(
                       controller: nameController,
-                      decoration: const InputDecoration(labelText: 'Название'),
+                      decoration: const InputDecoration(
+                        labelText: 'Название',
+                        border: OutlineInputBorder(),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: levelController,
-                      decoration: const InputDecoration(labelText: 'Уровень доступа'),
+                      decoration: const InputDecoration(
+                        labelText: 'Уровень доступа',
+                        border: OutlineInputBorder(),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     SwitchListTile(
@@ -102,14 +109,15 @@ class GroupViewState extends State<GroupView> {
                       return;
                     }
                     try {
+                      String responseMessage;
                       if (group == null) {
-                        await _presenter.createGroup(
+                        responseMessage = await _presenter.createGroup(
                           groupName: name,
                           groupAccessLevel: level,
                           groupStatus: status,
                         );
                       } else {
-                        await _presenter.updateGroup(
+                        responseMessage = await _presenter.updateGroup(
                           group,
                           name: name,
                           accessLevel: level,
@@ -118,7 +126,14 @@ class GroupViewState extends State<GroupView> {
                       }
                       if (!dialogContext.mounted) return;
                       Navigator.pop(dialogContext);
-                      await _fetchGroups();
+                      await _loadGroups();
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(responseMessage),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
                     } catch (e) {
                       if (!dialogContext.mounted) return;
                       Navigator.pop(dialogContext);
@@ -142,6 +157,7 @@ class GroupViewState extends State<GroupView> {
       context: context,
       builder: (alertContext) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Подтверждение'),
           content: Text('Вы уверены, что хотите удалить группу "${group.groupName}"?'),
           actions: [
@@ -159,8 +175,15 @@ class GroupViewState extends State<GroupView> {
     );
     if (confirmed == true) {
       try {
-        await _presenter.deleteGroup(group);
-        await _fetchGroups();
+        String responseMessage = await _presenter.deleteGroup(group);
+        await _loadGroups();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseMessage),
+            duration: const Duration(seconds: 2),
+          ),
+        );
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -192,63 +215,93 @@ class GroupViewState extends State<GroupView> {
     );
   }
 
-  Widget _buildStyledDataTable() {
-    return DataTableTheme(
-      data: DataTableThemeData(
-        headingRowColor: WidgetStateProperty.all(Colors.blueGrey[50]),
-        headingTextStyle: const TextStyle(
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
-        dataRowColor: WidgetStateProperty.resolveWith<Color?>(
-              (states) => null,
-        ),
-        dataTextStyle: const TextStyle(fontSize: 14),
-        dividerThickness: 1,
-      ),
-      child: DataTable(
-        horizontalMargin: 10.0,
-        columnSpacing: 16.0,
-        columns: const [
-          DataColumn(label: Text('Название')),
-          DataColumn(label: Text('Уровень')),
-          DataColumn(label: Text('Статус')),
-          DataColumn(label: Text('Дата создания')),
-          DataColumn(label: Text('Действия')),
-        ],
-        rows: List<DataRow>.generate(_groups.length, (index) {
-          final group = _groups[index];
-          final isEvenRow = index % 2 == 0;
-          return DataRow(
-            color: WidgetStateProperty.all(isEvenRow ? Colors.grey[50] : Colors.white),
-            cells: [
-              DataCell(Text(group.groupName)),
-              DataCell(Center(child: Text(group.groupAccessLevel))),
-              DataCell(_buildStatusChip(group)),
-              DataCell(Text(
-                group.groupCreationDate.toLocal().toString().split('.')[0],
-              )),
-              DataCell(
+  Widget _buildGroupCard(Group group) {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Первая строка: название группы
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    group.groupName,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Вторая строка: статус слева и уровень доступа (прижат к правому краю) справа
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildStatusChip(group),
+                Text(
+                  "Уровень: ${group.groupAccessLevel}  ",
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            // Третья строка: дата создания слева и кнопки действий справа
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Дата создание: ${group.groupCreationDate.toLocal().toString().split('.')[0]}",
+                  style: const TextStyle(fontSize: 13),
+                ),
                 Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.edit),
-                      color: Colors.blue,
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(28, 28),
+                        padding: EdgeInsets.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: const Icon(Icons.edit, color: Colors.blue),
                       onPressed: () => _showGroupDialog(group: group),
                     ),
+                    const SizedBox(width: 16),
                     IconButton(
-                      icon: const Icon(Icons.delete),
-                      color: Colors.red,
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(28, 28),
+                        padding: EdgeInsets.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: const Icon(Icons.delete, color: Colors.red, size: 24),
                       onPressed: () => _confirmDelete(group),
                     ),
                   ],
-                ),
-              ),
-            ],
-          );
-        }),
+                )
+              ],
+            )
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildGroupList() {
+    if (_groups.isEmpty) {
+      return const Center(
+        child: Text('Нет групп. Добавьте новую группу.'),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 80),
+      itemCount: _groups.length,
+      itemBuilder: (context, index) {
+        final group = _groups[index];
+        return _buildGroupCard(group);
+      },
     );
   }
 
@@ -259,26 +312,13 @@ class GroupViewState extends State<GroupView> {
         title: const Text('Группы'),
       ),
       drawer: const WmsDrawer(),
-      body: Padding(
-        padding: EdgeInsets.zero,
+      body: RefreshIndicator(
+        onRefresh: _loadGroups,
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _errorMessage != null
             ? Center(child: Text(_errorMessage!))
-            : LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.topLeft,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                  child: _buildStyledDataTable(),
-                ),
-              ),
-            );
-          },
-        ),
+            : _buildGroupList(),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showGroupDialog(),

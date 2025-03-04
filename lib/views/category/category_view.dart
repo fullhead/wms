@@ -20,10 +20,10 @@ class CategoryViewState extends State<CategoryView> {
   void initState() {
     super.initState();
     _presenter = CategoryPresenter();
-    _fetchCategories();
+    _loadCategories();
   }
 
-  Future<void> _fetchCategories() async {
+  Future<void> _loadCategories() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -50,7 +50,7 @@ class CategoryViewState extends State<CategoryView> {
 
   Future<void> _showCategoryDialog({wms_category.Category? category}) async {
     final nameController =
-        TextEditingController(text: category?.categoryName ?? '');
+    TextEditingController(text: category?.categoryName ?? '');
 
     await showDialog(
       context: context,
@@ -58,6 +58,8 @@ class CategoryViewState extends State<CategoryView> {
         return StatefulBuilder(
           builder: (dialogContext, setStateDialog) {
             return AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               title: Text(category == null
                   ? 'Добавить категорию'
                   : 'Редактировать категорию'),
@@ -67,7 +69,10 @@ class CategoryViewState extends State<CategoryView> {
                   children: [
                     TextField(
                       controller: nameController,
-                      decoration: const InputDecoration(labelText: 'Название'),
+                      decoration: const InputDecoration(
+                        labelText: 'Название',
+                        border: OutlineInputBorder(),
+                      ),
                     ),
                   ],
                 ),
@@ -82,19 +87,30 @@ class CategoryViewState extends State<CategoryView> {
                     final name = nameController.text.trim();
                     if (name.isEmpty) {
                       ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        const SnackBar(content: Text('Название обязательно')),
+                        const SnackBar(
+                            content: Text('Название обязательно')),
                       );
                       return;
                     }
                     try {
+                      String responseMessage;
                       if (category == null) {
+                        responseMessage =
                         await _presenter.createCategory(categoryName: name);
                       } else {
+                        responseMessage =
                         await _presenter.updateCategory(category, name: name);
                       }
                       if (!dialogContext.mounted) return;
                       Navigator.pop(dialogContext);
-                      await _fetchCategories();
+                      await _loadCategories();
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(responseMessage),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
                     } catch (e) {
                       if (!dialogContext.mounted) return;
                       Navigator.pop(dialogContext);
@@ -118,6 +134,8 @@ class CategoryViewState extends State<CategoryView> {
       context: context,
       builder: (alertContext) {
         return AlertDialog(
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Подтверждение'),
           content: Text(
               'Вы уверены, что хотите удалить категорию "${category.categoryName}"?'),
@@ -136,8 +154,16 @@ class CategoryViewState extends State<CategoryView> {
     );
     if (confirmed == true) {
       try {
+        String responseMessage =
         await _presenter.deleteCategory(category);
-        await _fetchCategories();
+        await _loadCategories();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseMessage),
+            duration: const Duration(seconds: 2),
+          ),
+        );
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -147,63 +173,59 @@ class CategoryViewState extends State<CategoryView> {
     }
   }
 
-  Widget _buildStyledDataTable() {
-    return DataTableTheme(
-      data: DataTableThemeData(
-        headingRowColor: WidgetStateProperty.all(Colors.blueGrey[50]),
-        headingTextStyle: const TextStyle(
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
+  Widget _buildCategoryCard(wms_category.Category category) {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ListTile(
+        contentPadding:
+        const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        title: Text(
+          category.categoryName,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
-        dataTextStyle: const TextStyle(fontSize: 14),
-        dividerThickness: 1,
-      ),
-      child: DataTable(
-        horizontalMargin: 10.0,
-        columnSpacing: 16.0,
-        columns: const [
-          DataColumn(label: Text('Название')),
-          DataColumn(
-            label: Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: Text('Действия'),
-            ),
-            headingRowAlignment: MainAxisAlignment.end,
-          ),
-        ],
-        rows: List<DataRow>.generate(_categories.length, (index) {
-          final category = _categories[index];
-          final isEvenRow = index % 2 == 0;
-          return DataRow(
-            color: WidgetStateProperty.all(
-                isEvenRow ? Colors.grey[50] : Colors.white),
-            cells: [
-              DataCell(Text(category.categoryName)),
-              DataCell(
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        color: Colors.blue,
-                        onPressed: () =>
-                            _showCategoryDialog(category: category),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        color: Colors.red,
-                        onPressed: () => _confirmDelete(category),
-                      ),
-                    ],
-                  ),
-                ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              style: IconButton.styleFrom(
+                minimumSize: const Size(28, 28),
+                padding: EdgeInsets.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-            ],
-          );
-        }),
+              icon: const Icon(Icons.edit, color: Colors.blue),
+              onPressed: () => _showCategoryDialog(category: category),
+            ),
+            const SizedBox(width: 16),
+            IconButton(
+              style: IconButton.styleFrom(
+                minimumSize: const Size(28, 28),
+                padding: EdgeInsets.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: () => _confirmDelete(category),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildCategoryList() {
+    if (_categories.isEmpty) {
+      return const Center(
+        child: Text('Нет категорий. Добавьте новую категорию.'),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 80),
+      itemCount: _categories.length,
+      itemBuilder: (context, index) {
+        final category = _categories[index];
+        return _buildCategoryCard(category);
+      },
     );
   }
 
@@ -214,27 +236,13 @@ class CategoryViewState extends State<CategoryView> {
         title: const Text('Категории'),
       ),
       drawer: const WmsDrawer(),
-      body: Padding(
-        padding: EdgeInsets.zero,
+      body: RefreshIndicator(
+        onRefresh: _loadCategories,
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _errorMessage != null
-                ? Center(child: Text(_errorMessage!))
-                : LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SingleChildScrollView(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.topLeft,
-                          child: ConstrainedBox(
-                            constraints:
-                                BoxConstraints(minWidth: constraints.maxWidth),
-                            child: _buildStyledDataTable(),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+            ? Center(child: Text(_errorMessage!))
+            : _buildCategoryList(),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCategoryDialog(),

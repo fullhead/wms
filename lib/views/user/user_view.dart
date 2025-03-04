@@ -32,7 +32,7 @@ class UserViewState extends State<UserView> {
     _userPresenter = UserPresenter();
     _groupPresenter = GroupPresenter();
     _loadToken();
-    _fetchUsers();
+    _loadUsers();
   }
 
   Future<void> _loadToken() async {
@@ -40,7 +40,7 @@ class UserViewState extends State<UserView> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _fetchUsers() async {
+  Future<void> _loadUsers() async {
     setState(() => _isLoading = true);
     try {
       final users = await _userPresenter.fetchAllUsers();
@@ -58,7 +58,7 @@ class UserViewState extends State<UserView> {
     }
   }
 
-  Future<List<Group>> _fetchGroupsForDialog() async {
+  Future<List<Group>> _loadGroupsForUser() async {
     return _groupPresenter.fetchAllGroups();
   }
 
@@ -72,7 +72,6 @@ class UserViewState extends State<UserView> {
     return pickedFile != null ? File(pickedFile.path) : null;
   }
 
-  /// Диалог выбора источника изображения (галерея или камера)
   Future<File?> _showImageSourceSelectionDialog(BuildContext dialogContext) async {
     return showModalBottomSheet<File?>(
       context: dialogContext,
@@ -100,104 +99,6 @@ class UserViewState extends State<UserView> {
     );
   }
 
-  Future<void> _confirmDeleteUser(User user) async {
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (alertContext) => AlertDialog(
-        title: const Text('Подтверждение'),
-        content: Text('Удалить пользователя "${user.userFullname}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(alertContext, false),
-            child: const Text('Отмена'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(alertContext, true),
-            child: const Text('Удалить'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      try {
-        await _userPresenter.deleteUser(user);
-        await _fetchUsers();
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    }
-  }
-
-  Widget _buildStatusChip(User user) {
-    final isActive = user.userStatus;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isActive ? Colors.green[100] : Colors.red[100],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        isActive ? 'Активен' : 'Заблокирован',
-        style: TextStyle(
-          color: isActive ? Colors.green[800] : Colors.red[800],
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDialogImage({
-    File? fileImage,
-    String? imageUrl,
-    String? token,
-    bool showPlaceholder = false,
-  }) {
-    if (fileImage != null) {
-      return Container(
-        width: 250,
-        height: 250,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: FileImage(fileImage),
-            fit: BoxFit.cover,
-          ),
-          color: Colors.grey[300],
-          borderRadius: BorderRadius.circular(4),
-        ),
-      );
-    } else if (imageUrl != null && imageUrl.isNotEmpty) {
-      return Container(
-        width: 250,
-        height: 250,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: CachedNetworkImageProvider(
-              AppConstants.apiBaseUrl + imageUrl,
-              headers: token != null ? {"Authorization": "Bearer $token"} : null,
-            ),
-            fit: BoxFit.cover,
-          ),
-          color: Colors.grey[300],
-          borderRadius: BorderRadius.circular(4),
-        ),
-      );
-    }
-    return Container(
-      width: 250,
-      height: 250,
-      decoration: BoxDecoration(
-        color: Colors.grey[300],
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: showPlaceholder ? const Icon(Icons.person, size: 50) : null,
-    );
-  }
 
   void _showUserDetails(User user) {
     showDialog(
@@ -236,6 +137,7 @@ class UserViewState extends State<UserView> {
                 ),
               ),
               const SizedBox(height: 20),
+              const Divider(height: 20),
               Row(
                 children: [
                   const Icon(Icons.login, size: 16),
@@ -246,7 +148,7 @@ class UserViewState extends State<UserView> {
                   Text(user.userName, style: const TextStyle(fontSize: 16)),
                 ],
               ),
-              const SizedBox(height: 8),
+              const Divider(height: 20),
               Row(
                 children: [
                   const Icon(Icons.info, size: 16),
@@ -257,7 +159,7 @@ class UserViewState extends State<UserView> {
                   _buildStatusChip(user),
                 ],
               ),
-              const SizedBox(height: 8),
+              const Divider(height: 20),
               Row(
                 children: [
                   const Icon(Icons.group, size: 16),
@@ -268,7 +170,7 @@ class UserViewState extends State<UserView> {
                   Text(user.userGroup.groupName, style: const TextStyle(fontSize: 16)),
                 ],
               ),
-              const SizedBox(height: 8),
+              const Divider(height: 20),
               Row(
                 children: [
                   const Icon(Icons.calendar_today, size: 16),
@@ -282,7 +184,7 @@ class UserViewState extends State<UserView> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const Divider(height: 20),
               Row(
                 children: [
                   const Icon(Icons.access_time, size: 16),
@@ -296,7 +198,7 @@ class UserViewState extends State<UserView> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const Divider(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -326,6 +228,7 @@ class UserViewState extends State<UserView> {
   }
 
   Future<void> _showEditUserDialog(User user) async {
+    final parentContext = context;
     final editFormKey = GlobalKey<FormState>();
     final fullNameController = TextEditingController(text: user.userFullname);
     final usernameController = TextEditingController(text: user.userName);
@@ -337,7 +240,7 @@ class UserViewState extends State<UserView> {
     List<Group> allGroups = [];
 
     try {
-      allGroups = await _fetchGroupsForDialog();
+      allGroups = await _loadGroupsForUser();
       final foundIndex =
       allGroups.indexWhere((g) => g.groupID == user.userGroup.groupID);
       if (foundIndex >= 0) {
@@ -458,22 +361,43 @@ class UserViewState extends State<UserView> {
             TextButton(
               onPressed: () async {
                 if (editFormKey.currentState!.validate()) {
-                  String newAvatar = imagePath;
-                  if (editedImage != null) {
-                    newAvatar = await _userPresenter.userApiService.uploadUserAvatar(editedImage!.path);
+                  try {
+                    String newAvatar = imagePath;
+                    if (editedImage != null) {
+                      newAvatar = await _userPresenter.userApiService.uploadUserAvatar(editedImage!.path);
+                    }
+                    final responseMessage = await _userPresenter.updateUser(
+                      user,
+                      fullName: fullNameController.text.trim(),
+                      username: usernameController.text.trim(),
+                      avatar: newAvatar,
+                      status: status,
+                      password: passwordController.text.trim().isEmpty ? null : passwordController.text.trim(),
+                      group: selectedGroup,
+                    );
+                    if (inDialogContext.mounted) {
+                      Navigator.of(inDialogContext).pop();
+                    }
+                    await _loadUsers();
+                    if (mounted) {
+                      ScaffoldMessenger.of(parentContext).showSnackBar(
+                        SnackBar(
+                          content: Text(responseMessage),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  }catch (e) {
+                    if (inDialogContext.mounted) {
+                      Navigator.of(inDialogContext).pop();
+                      ScaffoldMessenger.of(inDialogContext).showSnackBar(
+                        SnackBar(
+                          content: Text(e.toString()),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   }
-                  await _userPresenter.updateUser(
-                    user,
-                    fullName: fullNameController.text.trim(),
-                    username: usernameController.text.trim(),
-                    avatar: newAvatar,
-                    status: status,
-                    password: passwordController.text.trim().isEmpty ? null : passwordController.text.trim(),
-                    group: selectedGroup,
-                  );
-                  if (!mounted) return;
-                  Navigator.of(inDialogContext).pop();
-                  await _fetchUsers();
                 }
               },
               child: const Text("Сохранить"),
@@ -485,6 +409,7 @@ class UserViewState extends State<UserView> {
   }
 
   Future<void> _showCreateUserDialog() async {
+    final parentContext = context;
     final createFormKey = GlobalKey<FormState>();
     final fullNameController = TextEditingController();
     final usernameController = TextEditingController();
@@ -495,7 +420,7 @@ class UserViewState extends State<UserView> {
     Group? selectedGroup;
     List<Group> allGroups = [];
     try {
-      allGroups = await _fetchGroupsForDialog();
+      allGroups = await _loadGroupsForUser();
       if (allGroups.isNotEmpty) {
         selectedGroup = allGroups.first;
       }
@@ -611,20 +536,41 @@ class UserViewState extends State<UserView> {
             TextButton(
               onPressed: () async {
                 if (createFormKey.currentState!.validate() && selectedGroup != null) {
-                  if (newImage != null) {
-                    avatarPath = await _userPresenter.userApiService.uploadUserAvatar(newImage!.path);
+                  try {
+                    if (newImage != null) {
+                      avatarPath = await _userPresenter.userApiService.uploadUserAvatar(newImage!.path);
+                    }
+                    final responseMessage = await _userPresenter.createUser(
+                      fullName: fullNameController.text.trim(),
+                      username: usernameController.text.trim(),
+                      password: passwordController.text.trim(),
+                      group: selectedGroup!,
+                      avatar: avatarPath ?? '',
+                      status: status,
+                    );
+                    if (inDialogContext.mounted) {
+                      Navigator.of(inDialogContext).pop();
+                    }
+                    await _loadUsers();
+                    if (mounted) {
+                      ScaffoldMessenger.of(parentContext).showSnackBar(
+                        SnackBar(
+                          content: Text(responseMessage),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (inDialogContext.mounted) {
+                      Navigator.of(inDialogContext).pop();
+                      ScaffoldMessenger.of(inDialogContext).showSnackBar(
+                        SnackBar(
+                          content: Text(e.toString()),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   }
-                  await _userPresenter.createUser(
-                    fullName: fullNameController.text.trim(),
-                    username: usernameController.text.trim(),
-                    password: passwordController.text.trim(),
-                    group: selectedGroup!,
-                    avatar: avatarPath ?? '',
-                    status: status,
-                  );
-                  if (!mounted) return;
-                  Navigator.of(inDialogContext).pop();
-                  await _fetchUsers();
                 }
               },
               child: const Text("Создать"),
@@ -632,6 +578,114 @@ class UserViewState extends State<UserView> {
           ],
         );
       },
+    );
+  }
+
+  Future<void> _confirmDeleteUser(User user) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (alertContext) => AlertDialog(
+        title: const Text('Подтверждение'),
+        content: Text('Удалить пользователя "${user.userFullname}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(alertContext, false),
+            child: const Text('Отмена'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(alertContext, true),
+            child: const Text('Удалить'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      try {
+        final responseMessage = await _userPresenter.deleteUser(user);
+        await _loadUsers();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(responseMessage),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+
+  Widget _buildStatusChip(User user) {
+    final isActive = user.userStatus;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isActive ? Colors.green[100] : Colors.red[100],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        isActive ? 'Активен' : 'Заблокирован',
+        style: TextStyle(
+          color: isActive ? Colors.green[800] : Colors.red[800],
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDialogImage({
+    File? fileImage,
+    String? imageUrl,
+    String? token,
+    bool showPlaceholder = false,
+  }) {
+    if (fileImage != null) {
+      return Container(
+        width: 250,
+        height: 250,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: FileImage(fileImage),
+            fit: BoxFit.cover,
+          ),
+          color: Colors.grey[300],
+          borderRadius: BorderRadius.circular(4),
+        ),
+      );
+    } else if (imageUrl != null && imageUrl.isNotEmpty) {
+      return Container(
+        width: 250,
+        height: 250,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: CachedNetworkImageProvider(
+              AppConstants.apiBaseUrl + imageUrl,
+              headers: token != null ? {"Authorization": "Bearer $token"} : null,
+            ),
+            fit: BoxFit.cover,
+          ),
+          color: Colors.grey[300],
+          borderRadius: BorderRadius.circular(4),
+        ),
+      );
+    }
+    return Container(
+      width: 250,
+      height: 250,
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: showPlaceholder ? const Icon(Icons.person, size: 50) : null,
     );
   }
 
@@ -645,7 +699,7 @@ class UserViewState extends State<UserView> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-        onRefresh: _fetchUsers,
+        onRefresh: _loadUsers,
         child: ListView.builder(
           itemCount: _users.length,
           itemBuilder: (context, index) {

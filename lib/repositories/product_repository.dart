@@ -1,4 +1,3 @@
-import 'package:wms/core/constants.dart';
 import 'package:wms/models/product.dart';
 import 'package:wms/models/category.dart';
 import 'package:wms/services/product_api_service.dart';
@@ -11,11 +10,11 @@ class ProductRepository {
 
   ProductRepository({
     ProductAPIService? productAPIService,
-    CategoryAPIService? categoryAPIService,
+    CategoryAPIService? categoryAPIService, required String baseUrl
   })  : productAPIService = productAPIService ??
-            ProductAPIService(baseUrl: AppConstants.apiBaseUrl),
+            ProductAPIService(baseUrl: baseUrl),
         categoryAPIService = categoryAPIService ??
-            CategoryAPIService(baseUrl: AppConstants.apiBaseUrl);
+            CategoryAPIService(baseUrl: baseUrl);
 
   /// Получает список всей продукции.
   Future<List<Product>> getAllProducts() async {

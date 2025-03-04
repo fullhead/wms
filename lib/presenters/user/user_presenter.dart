@@ -11,10 +11,7 @@ class UserPresenter {
 
   UserPresenter({UserRepository? userRepository})
       : _userRepository = userRepository ??
-            UserRepository(userAPIService:
-                  UserAPIService(baseUrl: AppConstants.apiBaseUrl),
-              groupAPIService:
-                  GroupAPIService(baseUrl: AppConstants.apiBaseUrl),
+            UserRepository(baseUrl: AppConstants.apiBaseUrl,
             );
 
   /// Геттер для доступа к UserAPIService.
@@ -29,7 +26,7 @@ class UserPresenter {
   }
 
   /// Создаёт нового пользователя.
-  Future<void> createUser({
+  Future<String> createUser({
     required String fullName,
     required String username,
     required String password,
@@ -48,11 +45,11 @@ class UserPresenter {
       userCreationDate: DateTime.now(),
       userLastLoginDate: DateTime.now(),
     );
-    await _userRepository.createUser(newUser);
+    return await _userRepository.createUser(newUser);
   }
 
   /// Обновляет данные пользователя.
-  Future<void> updateUser(
+  Future<String> updateUser(
     User user, {
     String? fullName,
     String? username,
@@ -71,11 +68,11 @@ class UserPresenter {
     if (group != null) {
       user.userGroup = group;
     }
-    await _userRepository.updateUser(user);
+    return await _userRepository.updateUser(user);
   }
 
   /// Удаляет пользователя.
-  Future<void> deleteUser(User user) async {
-    await _userRepository.deleteUser(user.userID);
+  Future<String> deleteUser(User user) async {
+    return await _userRepository.deleteUser(user.userID);
   }
 }

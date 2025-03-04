@@ -27,99 +27,88 @@ class CategoryAPIService {
   /// Получает список всех категорий.
   Future<List<Map<String, dynamic>>> getAllCategory() async {
     final headers = await _getHeaders();
-    final response =
-        await http.get(Uri.parse('$baseUrl/categories'), headers: headers);
-    debugPrint('CategoryAPIService.getAllCategory: ${response.body}');
+    final response = await http.get(Uri.parse('$baseUrl/categories'), headers: headers);
     if (response.statusCode == 200) {
       List<dynamic> data = jsonDecode(response.body);
+      debugPrint('CategoryAPIService.getAllCategory: ${response.body}');
       return data.cast<Map<String, dynamic>>();
     } else {
       final errorData = jsonDecode(response.body);
       debugPrint('CategoryAPIService.getAllCategory error: ${response.body}');
-      throw ApiException(
-          errorData['error'] ?? 'Неизвестная ошибка при получении категорий');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при получении категорий');
     }
   }
 
   /// Получает категорию по её ID.
   Future<wms_category.Category> getCategoryById(int categoryId) async {
     final headers = await _getHeaders();
-    final response = await http
-        .get(Uri.parse('$baseUrl/categories/$categoryId'), headers: headers);
-    debugPrint(
-        'CategoryAPIService.getCategoryById ($categoryId): ${response.body}');
+    final response = await http.get(Uri.parse('$baseUrl/categories/$categoryId'), headers: headers);
     if (response.statusCode == 200) {
       Map<String, dynamic> data = jsonDecode(response.body);
+      debugPrint('CategoryAPIService.getCategoryById ($categoryId): ${response.body}');
       return wms_category.Category.fromJson(data);
     } else {
       final errorData = jsonDecode(response.body);
-      debugPrint(
-          'CategoryAPIService.getCategoryById error ($categoryId): ${response.body}');
-      throw ApiException(errorData['error'] ??
-          'Неизвестная ошибка при получении категории по ID');
+      debugPrint('CategoryAPIService.getCategoryById error ($categoryId): ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при получении категории по ID');
     }
   }
 
   /// Создает новую категорию.
-  Future<void> createCategory(Map<String, dynamic> categoryMap) async {
+  Future<String> createCategory(Map<String, dynamic> categoryMap) async {
     final headers = await _getHeaders();
-    debugPrint(
-        'CategoryAPIService.createCategory payload: ${jsonEncode(categoryMap)}');
+    debugPrint('CategoryAPIService.createCategory payload: ${jsonEncode(categoryMap)}');
     final response = await http.post(
       Uri.parse('$baseUrl/categories'),
       headers: headers,
       body: jsonEncode(categoryMap),
     );
-    debugPrint('CategoryAPIService.createCategory response: ${response.body}');
     if (response.statusCode == 201) {
-      return;
+      debugPrint('CategoryAPIService.createCategory response: ${response.body}');
+      final data = jsonDecode(response.body);
+      return data['message'] ?? 'Категория создана';
     } else {
       final errorData = jsonDecode(response.body);
       debugPrint('CategoryAPIService.createCategory error: ${response.body}');
-      throw ApiException(
-          errorData['error'] ?? 'Неизвестная ошибка при создании категории');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при создании категории');
     }
   }
 
   /// Обновляет данные категории по её ID.
-  Future<void> updateCategory(
-      Map<String, dynamic> categoryMap, int categoryId) async {
+  Future<String> updateCategory(Map<String, dynamic> categoryMap, int categoryId) async {
     final headers = await _getHeaders();
-    debugPrint(
-        'CategoryAPIService.updateCategory payload for categoryId $categoryId: ${jsonEncode(categoryMap)}');
+    debugPrint('CategoryAPIService.updateCategory payload for categoryId $categoryId: ${jsonEncode(categoryMap)}');
     final response = await http.put(
       Uri.parse('$baseUrl/categories/$categoryId'),
       headers: headers,
       body: jsonEncode(categoryMap),
     );
-    debugPrint(
-        'CategoryAPIService.updateCategory response for categoryId $categoryId: ${response.body}');
     if (response.statusCode == 200) {
-      return;
+      debugPrint('CategoryAPIService.updateCategory response for categoryId $categoryId: ${response.body}');
+      final data = jsonDecode(response.body);
+      return data['message'] ?? 'Категория обновлена';
     } else {
       final errorData = jsonDecode(response.body);
-      debugPrint(
-          'CategoryAPIService.updateCategory error ($categoryId): ${response.body}');
-      throw ApiException(
-          errorData['error'] ?? 'Неизвестная ошибка при обновлении категории');
+      debugPrint('CategoryAPIService.updateCategory error ($categoryId): ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при обновлении категории');
     }
   }
 
   /// Удаляет категорию по её ID.
-  Future<void> deleteCategory(int categoryID) async {
+  Future<String> deleteCategory(int categoryID) async {
     final headers = await _getHeaders();
-    final response = await http
-        .delete(Uri.parse('$baseUrl/categories/$categoryID'), headers: headers);
-    debugPrint(
-        'CategoryAPIService.deleteCategory ($categoryID): ${response.body}');
+    final response = await http.delete(
+        Uri.parse('$baseUrl/categories/$categoryID'),
+        headers: headers
+    );
     if (response.statusCode == 200) {
-      return;
+      debugPrint('CategoryAPIService.deleteCategory ($categoryID): ${response.body}');
+      final data = jsonDecode(response.body);
+      return data['message'] ?? 'Категория удалена';
     } else {
       final errorData = jsonDecode(response.body);
-      debugPrint(
-          'CategoryAPIService.deleteCategory error ($categoryID): ${response.body}');
-      throw ApiException(
-          errorData['error'] ?? 'Неизвестная ошибка при удалении категории');
+      debugPrint('CategoryAPIService.deleteCategory error ($categoryID): ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при удалении категории');
     }
   }
 }

@@ -27,9 +27,7 @@ class GroupAPIService {
   /// Получает список всех групп.
   Future<List<Map<String, dynamic>>> getAllGroups() async {
     final headers = await _getHeaders();
-    final response =
-        await http.get(Uri.parse('$baseUrl/groups'), headers: headers);
-
+    final response = await http.get(Uri.parse('$baseUrl/groups'), headers: headers);
     if (response.statusCode == 200) {
       List<dynamic> data = jsonDecode(response.body);
       debugPrint('GroupAPIService.getAllGroups: ${response.body}');
@@ -37,33 +35,27 @@ class GroupAPIService {
     } else {
       final errorData = jsonDecode(response.body);
       debugPrint('GroupAPIService.getAllGroups error: ${response.body}');
-      throw ApiException(
-          errorData['error'] ?? 'Неизвестная ошибка при получении групп');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при получении групп');
     }
   }
 
   /// Получает группу по её ID.
   Future<Group> getGroupById(int groupId) async {
     final headers = await _getHeaders();
-    final response =
-        await http.get(Uri.parse('$baseUrl/groups/$groupId'), headers: headers);
-
+    final response = await http.get(Uri.parse('$baseUrl/groups/$groupId'), headers: headers);
     if (response.statusCode == 200) {
       Map<String, dynamic> data = jsonDecode(response.body);
       debugPrint('GroupAPIService.getGroupById ($groupId): ${response.body}');
       return Group.fromJson(data);
     } else {
       final errorData = jsonDecode(response.body);
-      debugPrint(
-          'GroupAPIService.getGroupById error ($groupId): ${response.body}');
-      throw ApiException(errorData['error'] ??
-          'Неизвестная ошибка при получении группы по ID');
+      debugPrint('GroupAPIService.getGroupById error ($groupId): ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при получении группы по ID');
     }
   }
 
   /// Создаёт новую группу.
-  /// ID и дата создания не передаются, их генерирует сервер.
-  Future<void> createGroup(Map<String, dynamic> groupMap) async {
+  Future<String> createGroup(Map<String, dynamic> groupMap) async {
     final headers = await _getHeaders();
     debugPrint('GroupAPIService.createGroup payload: ${jsonEncode(groupMap)}');
     final response = await http.post(
@@ -71,58 +63,52 @@ class GroupAPIService {
       headers: headers,
       body: jsonEncode(groupMap),
     );
-
     if (response.statusCode == 201) {
       debugPrint('GroupAPIService.createGroup: ${response.body}');
-      return;
+      final data = jsonDecode(response.body);
+      return data['message'] ?? 'Группа создана';
     } else {
       final errorData = jsonDecode(response.body);
       debugPrint('GroupAPIService.createGroup error: ${response.body}');
-      throw ApiException(
-          errorData['error'] ?? 'Неизвестная ошибка при создании группы');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при создании группы');
     }
   }
 
   /// Обновляет данные группы по её ID.
-  Future<void> updateGroup(Map<String, dynamic> groupMap, int groupId) async {
+  Future<String> updateGroup(Map<String, dynamic> groupMap, int groupId) async {
     final headers = await _getHeaders();
-    debugPrint(
-        'GroupAPIService.updateGroup payload для groupId $groupId: ${jsonEncode(groupMap)}');
+    debugPrint('GroupAPIService.updateGroup payload для groupId $groupId: ${jsonEncode(groupMap)}');
     final response = await http.put(
       Uri.parse('$baseUrl/groups/$groupId'),
       headers: headers,
       body: jsonEncode(groupMap),
     );
-
     if (response.statusCode == 200) {
       debugPrint('GroupAPIService.updateGroup ($groupId): ${response.body}');
-      return;
+      final data = jsonDecode(response.body);
+      return data['message'] ?? 'Группа обновлена';
     } else {
       final errorData = jsonDecode(response.body);
-      debugPrint(
-          'GroupAPIService.updateGroup error ($groupId): ${response.body}');
-      throw ApiException(
-          errorData['error'] ?? 'Неизвестная ошибка при обновлении группы');
+      debugPrint('GroupAPIService.updateGroup error ($groupId): ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при обновлении группы');
     }
   }
 
   /// Удаляет группу по её ID.
-  Future<void> deleteGroup(int groupID) async {
+  Future<String> deleteGroup(int groupID) async {
     final headers = await _getHeaders();
     final response = await http.delete(
       Uri.parse('$baseUrl/groups/$groupID'),
       headers: headers,
     );
-
     if (response.statusCode == 200) {
       debugPrint('GroupAPIService.deleteGroup ($groupID): ${response.body}');
-      return;
+      final data = jsonDecode(response.body);
+      return data['message'] ?? 'Группа удалена';
     } else {
       final errorData = jsonDecode(response.body);
-      debugPrint(
-          'GroupAPIService.deleteGroup error ($groupID): ${response.body}');
-      throw ApiException(
-          errorData['error'] ?? 'Неизвестная ошибка при удалении группы');
+      debugPrint('GroupAPIService.deleteGroup error ($groupID): ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при удалении группы');
     }
   }
 }

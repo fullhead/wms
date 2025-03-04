@@ -1,4 +1,3 @@
-import 'package:wms/core/constants.dart';
 import 'package:wms/models/user.dart';
 import 'package:wms/models/group.dart';
 import 'package:wms/services/user_api_service.dart';
@@ -11,11 +10,11 @@ class UserRepository {
 
   UserRepository({
     UserAPIService? userAPIService,
-    GroupAPIService? groupAPIService,
+    GroupAPIService? groupAPIService, required String baseUrl
   })  : userAPIService = userAPIService ??
-            UserAPIService(baseUrl: AppConstants.apiBaseUrl),
+            UserAPIService(baseUrl: baseUrl),
         groupAPIService = groupAPIService ??
-            GroupAPIService(baseUrl: AppConstants.apiBaseUrl);
+            GroupAPIService(baseUrl: baseUrl);
 
   /// Получает список всех пользователей.
   Future<List<User>> getAllUsers() async {

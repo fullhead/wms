@@ -10,8 +10,7 @@ class GroupRepository {
 
   /// Получает список всех групп.
   Future<List<Group>> getAllGroups() async {
-    final List<Map<String, dynamic>> groupMaps =
-        await groupAPIService.getAllGroups();
+    final List<Map<String, dynamic>> groupMaps = await groupAPIService.getAllGroups();
     return groupMaps.map((map) => Group.fromJson(map)).toList();
   }
 
@@ -21,17 +20,17 @@ class GroupRepository {
   }
 
   /// Создает новую группу.
-  Future<void> createGroup(Group group) async {
-    await groupAPIService.createGroup(group.toJson());
+  Future<String> createGroup(Group group) async {
+    return await groupAPIService.createGroup(group.toJson());
   }
 
   /// Обновляет данные группы.
-  Future<void> updateGroup(Group group) async {
-    await groupAPIService.updateGroup(group.toJson(), group.groupID);
+  Future<String> updateGroup(Group group) async {
+    return await groupAPIService.updateGroup(group.toJson(), group.groupID);
   }
 
   /// Удаляет группу по её ID.
-  Future<void> deleteGroup(int groupID) async {
-    await groupAPIService.deleteGroup(groupID);
+  Future<String> deleteGroup(int groupID) async {
+    return await groupAPIService.deleteGroup(groupID);
   }
 }

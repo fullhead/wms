@@ -9,7 +9,7 @@ class WmsApp extends StatelessWidget {
     return MaterialApp(
       title: 'WMS',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.green,
       ),
       initialRoute: AppRoutes.splash,
       routes: AppRoutes.getRoutes(),

@@ -61,54 +61,11 @@ class ProductViewState extends State<ProductView> {
     }
   }
 
-  Future<List<Category>> _fetchCategoriesForDialog() async {
+  Future<List<Category>> _loadCategoriesForProduct() async {
     final data = await _presenter.categoryApiService.getAllCategory();
     return data.map((json) => Category.fromJson(json)).toList();
   }
 
-  Future<void> _confirmDeleteProduct(Product product) async {
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (alertContext) => AlertDialog(
-        title: const Text('Подтверждение'),
-        content: Text('Удалить продукт "${product.productName}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(alertContext, false),
-            child: const Text('Отмена'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(alertContext, true),
-            child: const Text('Удалить'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      try {
-        final responseMessage = await _presenter.deleteProduct(product);
-        await _loadProducts();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(responseMessage),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    }
-  }
-
-  /// Диалог выбора источника изображения (галерея или камера)
   Future<File?> _showImageSourceSelectionDialog(BuildContext dialogContext) async {
     return showModalBottomSheet<File?>(
       context: dialogContext,
@@ -163,7 +120,7 @@ class ProductViewState extends State<ProductView> {
   }
 
   Future<void> _showFilterDialog() async {
-    final categories = await _fetchCategoriesForDialog();
+    final categories = await _loadCategoriesForProduct();
     final tempSelected = Set<int>.from(_selectedCategoryIds);
     if (!mounted) return;
     await showDialog(
@@ -215,6 +172,7 @@ class ProductViewState extends State<ProductView> {
       },
     );
   }
+
 
   void _showProductDetails(Product product) {
     showDialog(
@@ -300,7 +258,7 @@ class ProductViewState extends State<ProductView> {
     List<Category> allCategories = [];
 
     try {
-      allCategories = await _fetchCategoriesForDialog();
+      allCategories = await _loadCategoriesForProduct();
       final foundIndex = allCategories.indexWhere((cat) => cat.categoryID == product.productCategory.categoryID);
       if (foundIndex >= 0) {
         editedCategory = allCategories[foundIndex];
@@ -495,7 +453,7 @@ class ProductViewState extends State<ProductView> {
 
     List<Category> allCategories = [];
     try {
-      allCategories = await _fetchCategoriesForDialog();
+      allCategories = await _loadCategoriesForProduct();
       if (allCategories.isNotEmpty) {
         newCategory = allCategories.first;
       }
@@ -666,6 +624,49 @@ class ProductViewState extends State<ProductView> {
       },
     );
   }
+
+  Future<void> _confirmDeleteProduct(Product product) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (alertContext) => AlertDialog(
+        title: const Text('Подтверждение'),
+        content: Text('Удалить продукт "${product.productName}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(alertContext, false),
+            child: const Text('Отмена'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(alertContext, true),
+            child: const Text('Удалить'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      try {
+        final responseMessage = await _presenter.deleteProduct(product);
+        await _loadProducts();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(responseMessage),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {

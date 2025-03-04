@@ -11,17 +11,17 @@ class ProductPresenter {
 
   ProductPresenter({ProductRepository? productRepository})
       : _productRepository = productRepository ??
-            ProductRepository(productAPIService:
-                  ProductAPIService(baseUrl: AppConstants.apiBaseUrl),
-              categoryAPIService:
-                  CategoryAPIService(baseUrl: AppConstants.apiBaseUrl),
+            ProductRepository(
+              baseUrl: AppConstants.apiBaseUrl,
             );
 
   /// Геттер для доступа к ProductAPIService.
-  ProductAPIService get productApiService => _productRepository.productAPIService;
+  ProductAPIService get productApiService =>
+      _productRepository.productAPIService;
 
   /// Геттер для доступа к CategoryAPIService.
-  CategoryAPIService get categoryApiService => _productRepository.categoryAPIService;
+  CategoryAPIService get categoryApiService =>
+      _productRepository.categoryAPIService;
 
   /// Получает список всей продукции.
   Future<List<Product>> fetchAllProduct() async {
