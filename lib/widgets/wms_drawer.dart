@@ -1,4 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:wms/core/constants.dart';
+import 'package:wms/models/user.dart';
+import 'package:wms/presenters/personalization/personalization_presenter.dart';
 import 'package:wms/services/auth_storage.dart';
 import 'package:wms/core/routes.dart';
 
@@ -11,6 +15,8 @@ class WmsDrawer extends StatefulWidget {
 
 class WmsDrawerState extends State<WmsDrawer> {
   String? activeRoute;
+  final PersonalizationPresenter _personalizationPresenter =
+      PersonalizationPresenter();
 
   @override
   void didChangeDependencies() {
@@ -44,21 +50,6 @@ class WmsDrawerState extends State<WmsDrawer> {
     }
   }
 
-  bool _isUsersSection(String? route) =>
-      route == AppRoutes.users || route == AppRoutes.groups;
-
-  bool _isProductSection(String? route) =>
-      route == AppRoutes.products || route == AppRoutes.categories;
-
-  bool _isInventorySection(String? route) =>
-      route == AppRoutes.receipts || route == AppRoutes.issues;
-
-  bool _isStockSection(String? route) =>
-      route == AppRoutes.warehouse || route == AppRoutes.cells;
-
-  bool _isReportsSection(String? route) =>
-      route == AppRoutes.receiptReports || route == AppRoutes.issueReports;
-
   Future<void> _logout() async {
     await AuthStorage.deleteToken();
     await AuthStorage.deleteUserID();
@@ -72,28 +63,86 @@ class WmsDrawerState extends State<WmsDrawer> {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(color: Colors.blue),
-            child: Text(
-              'Администратор',
-              style: TextStyle(color: Colors.white, fontSize: 24),
+          Container(
+            color: Colors.blue,
+            height: 172,
+            padding: const EdgeInsets.all(12),
+            child: FutureBuilder<User>(
+              future: _personalizationPresenter.getCurrentUser(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  );
+                } else if (snapshot.hasError) {
+                  return const Align(
+                    alignment: Alignment.bottomLeft,
+                    child: Text(
+                      'Администратор',
+                      style: TextStyle(color: Colors.white, fontSize: 20),
+                    ),
+                  );
+                } else if (snapshot.hasData) {
+                  final user = snapshot.data!;
+                  final avatarUrl = user.userAvatar.isNotEmpty
+                      ? '${AppConstants.apiBaseUrl}${user.userAvatar}'
+                      : '${AppConstants.apiBaseUrl}/assets/user/no_image_user.png';
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Администратор',
+                        style: TextStyle(color: Colors.white, fontSize: 20),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 35,
+                            backgroundImage:
+                                CachedNetworkImageProvider(avatarUrl),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              user.userFullname,
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 18),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  );
+                }
+                return const SizedBox();
+              },
             ),
           ),
           ListTile(
             leading: const Icon(Icons.dashboard),
-            title: Text('Панель управления', style: _menuItemStyle(AppRoutes.dashboard)),
+            title: Text('Панель управления',
+                style: _menuItemStyle(AppRoutes.dashboard)),
             selected: activeRoute == AppRoutes.dashboard,
             onTap: () => _handleNavigation(AppRoutes.dashboard),
           ),
           ExpansionTile(
             leading: const Icon(Icons.people_outline),
-            title: const Text('Все пользователи', style: TextStyle(fontSize: 16)),
-            initiallyExpanded: _isUsersSection(activeRoute),
+            title:
+                const Text('Все пользователи', style: TextStyle(fontSize: 16)),
+            initiallyExpanded: activeRoute == AppRoutes.users ||
+                activeRoute == AppRoutes.groups,
             childrenPadding: const EdgeInsets.only(left: 24.0),
             children: [
               ListTile(
                 leading: const Icon(Icons.person),
-                title: Text('Пользователи', style: _subItemStyle(AppRoutes.users)),
+                title:
+                    Text('Пользователи', style: _subItemStyle(AppRoutes.users)),
                 selected: activeRoute == AppRoutes.users,
                 onTap: () => _handleNavigation(AppRoutes.users),
               ),
@@ -108,18 +157,21 @@ class WmsDrawerState extends State<WmsDrawer> {
           ExpansionTile(
             leading: const Icon(Icons.inventory),
             title: const Text('База продукции', style: TextStyle(fontSize: 16)),
-            initiallyExpanded: _isProductSection(activeRoute),
+            initiallyExpanded: activeRoute == AppRoutes.products ||
+                activeRoute == AppRoutes.categories,
             childrenPadding: const EdgeInsets.only(left: 24.0),
             children: [
               ListTile(
                 leading: const Icon(Icons.production_quantity_limits),
-                title: Text('Все продукции', style: _subItemStyle(AppRoutes.products)),
+                title: Text('Все продукции',
+                    style: _subItemStyle(AppRoutes.products)),
                 selected: activeRoute == AppRoutes.products,
                 onTap: () => _handleNavigation(AppRoutes.products),
               ),
               ListTile(
                 leading: const Icon(Icons.category),
-                title: Text('Категории', style: _subItemStyle(AppRoutes.categories)),
+                title: Text('Категории',
+                    style: _subItemStyle(AppRoutes.categories)),
                 selected: activeRoute == AppRoutes.categories,
                 onTap: () => _handleNavigation(AppRoutes.categories),
               ),
@@ -127,13 +179,16 @@ class WmsDrawerState extends State<WmsDrawer> {
           ),
           ExpansionTile(
             leading: const Icon(Icons.settings),
-            title: const Text('Управление запасами', style: TextStyle(fontSize: 16)),
-            initiallyExpanded: _isInventorySection(activeRoute),
+            title: const Text('Управление запасами',
+                style: TextStyle(fontSize: 16)),
+            initiallyExpanded: activeRoute == AppRoutes.receipts ||
+                activeRoute == AppRoutes.issues,
             childrenPadding: const EdgeInsets.only(left: 24.0),
             children: [
               ListTile(
                 leading: const Icon(Icons.call_received),
-                title: Text('Приемка', style: _subItemStyle(AppRoutes.receipts)),
+                title:
+                    Text('Приемка', style: _subItemStyle(AppRoutes.receipts)),
                 selected: activeRoute == AppRoutes.receipts,
                 onTap: () => _handleNavigation(AppRoutes.receipts),
               ),
@@ -148,7 +203,8 @@ class WmsDrawerState extends State<WmsDrawer> {
           ExpansionTile(
             leading: const Icon(Icons.account_balance),
             title: const Text('Учет запасов', style: TextStyle(fontSize: 16)),
-            initiallyExpanded: _isStockSection(activeRoute),
+            initiallyExpanded: activeRoute == AppRoutes.warehouse ||
+                activeRoute == AppRoutes.cells,
             childrenPadding: const EdgeInsets.only(left: 24.0),
             children: [
               ListTile(
@@ -168,18 +224,21 @@ class WmsDrawerState extends State<WmsDrawer> {
           ExpansionTile(
             leading: const Icon(Icons.insert_chart),
             title: const Text('Отчеты', style: TextStyle(fontSize: 16)),
-            initiallyExpanded: _isReportsSection(activeRoute),
+            initiallyExpanded: activeRoute == AppRoutes.receiptReports ||
+                activeRoute == AppRoutes.issueReports,
             childrenPadding: const EdgeInsets.only(left: 24.0),
             children: [
               ListTile(
                 leading: const Icon(Icons.arrow_downward),
-                title: Text('Отчеты по приемкам', style: _subItemStyle(AppRoutes.receiptReports)),
+                title: Text('Отчеты по приемкам',
+                    style: _subItemStyle(AppRoutes.receiptReports)),
                 selected: activeRoute == AppRoutes.receiptReports,
                 onTap: () => _handleNavigation(AppRoutes.receiptReports),
               ),
               ListTile(
                 leading: const Icon(Icons.arrow_upward),
-                title: Text('Отчеты по выдачам', style: _subItemStyle(AppRoutes.issueReports)),
+                title: Text('Отчеты по выдачам',
+                    style: _subItemStyle(AppRoutes.issueReports)),
                 selected: activeRoute == AppRoutes.issueReports,
                 onTap: () => _handleNavigation(AppRoutes.issueReports),
               ),
@@ -187,7 +246,8 @@ class WmsDrawerState extends State<WmsDrawer> {
           ),
           ListTile(
             leading: const Icon(Icons.person_pin),
-            title: Text('Персонализация', style: _menuItemStyle(AppRoutes.personalization)),
+            title: Text('Персонализация',
+                style: _menuItemStyle(AppRoutes.personalization)),
             selected: activeRoute == AppRoutes.personalization,
             onTap: () => _handleNavigation(AppRoutes.personalization),
           ),
@@ -196,7 +256,8 @@ class WmsDrawerState extends State<WmsDrawer> {
             leading: const Icon(Icons.exit_to_app),
             title: const Text(
               'Выйти',
-              style: TextStyle(fontWeight: FontWeight.normal, color: Colors.black),
+              style:
+                  TextStyle(fontWeight: FontWeight.normal, color: Colors.black),
             ),
             onTap: _logout,
           ),

@@ -146,4 +146,21 @@ class UserAPIService {
       throw ApiException(errorData['error'] ?? 'Ошибка при загрузке аватара');
     }
   }
+
+  /// Обновляет токен пользователя.
+  Future<String> refreshToken() async {
+    final headers = await _getHeaders();
+    final response = await http.post(Uri.parse('$baseUrl/users/refresh-token'), headers: headers);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data.containsKey('token')) {
+        return data['token'] as String;
+      } else {
+        throw ApiException('Токен не получен при обновлении');
+      }
+    } else {
+      final errorData = jsonDecode(response.body);
+      throw ApiException(errorData['error'] ?? 'Ошибка при обновлении токена');
+    }
+  }
 }
