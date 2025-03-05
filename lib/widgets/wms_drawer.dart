@@ -16,12 +16,24 @@ class WmsDrawer extends StatefulWidget {
 class WmsDrawerState extends State<WmsDrawer> {
   String? activeRoute;
   final PersonalizationPresenter _personalizationPresenter =
-      PersonalizationPresenter();
+  PersonalizationPresenter();
+  String? _token;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadToken();
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     activeRoute = ModalRoute.of(context)?.settings.name;
+  }
+
+  Future<void> _loadToken() async {
+    _token = await AuthStorage.getToken();
+    if (mounted) setState(() {});
   }
 
   TextStyle _menuItemStyle(String route) {
@@ -57,6 +69,19 @@ class WmsDrawerState extends State<WmsDrawer> {
     Navigator.pushReplacementNamed(context, AppRoutes.authorization);
   }
 
+  Widget _buildAvatar(User user) {
+    final avatarUrl = user.userAvatar.isNotEmpty
+        ? '${AppConstants.apiBaseUrl}${user.userAvatar}'
+        : '${AppConstants.apiBaseUrl}/assets/user/no_image_user.png';
+    return CircleAvatar(
+      radius: 35,
+      backgroundImage: CachedNetworkImageProvider(
+        avatarUrl,
+        headers: _token != null ? {"Authorization": "Bearer $_token"} : null,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -86,9 +111,6 @@ class WmsDrawerState extends State<WmsDrawer> {
                   );
                 } else if (snapshot.hasData) {
                   final user = snapshot.data!;
-                  final avatarUrl = user.userAvatar.isNotEmpty
-                      ? '${AppConstants.apiBaseUrl}${user.userAvatar}'
-                      : '${AppConstants.apiBaseUrl}/assets/user/no_image_user.png';
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,11 +122,7 @@ class WmsDrawerState extends State<WmsDrawer> {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          CircleAvatar(
-                            radius: 35,
-                            backgroundImage:
-                                CachedNetworkImageProvider(avatarUrl),
-                          ),
+                          _buildAvatar(user),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -134,7 +152,7 @@ class WmsDrawerState extends State<WmsDrawer> {
           ExpansionTile(
             leading: const Icon(Icons.people_outline),
             title:
-                const Text('Все пользователи', style: TextStyle(fontSize: 16)),
+            const Text('Все пользователи', style: TextStyle(fontSize: 16)),
             initiallyExpanded: activeRoute == AppRoutes.users ||
                 activeRoute == AppRoutes.groups,
             childrenPadding: const EdgeInsets.only(left: 24.0),
@@ -142,7 +160,7 @@ class WmsDrawerState extends State<WmsDrawer> {
               ListTile(
                 leading: const Icon(Icons.person),
                 title:
-                    Text('Пользователи', style: _subItemStyle(AppRoutes.users)),
+                Text('Пользователи', style: _subItemStyle(AppRoutes.users)),
                 selected: activeRoute == AppRoutes.users,
                 onTap: () => _handleNavigation(AppRoutes.users),
               ),
@@ -188,7 +206,7 @@ class WmsDrawerState extends State<WmsDrawer> {
               ListTile(
                 leading: const Icon(Icons.call_received),
                 title:
-                    Text('Приемка', style: _subItemStyle(AppRoutes.receipts)),
+                Text('Приемка', style: _subItemStyle(AppRoutes.receipts)),
                 selected: activeRoute == AppRoutes.receipts,
                 onTap: () => _handleNavigation(AppRoutes.receipts),
               ),
@@ -257,7 +275,7 @@ class WmsDrawerState extends State<WmsDrawer> {
             title: const Text(
               'Выйти',
               style:
-                  TextStyle(fontWeight: FontWeight.normal, color: Colors.black),
+              TextStyle(fontWeight: FontWeight.normal, color: Colors.black),
             ),
             onTap: _logout,
           ),

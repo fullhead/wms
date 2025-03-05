@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:wms/models/category.dart' as wms_category;
+import 'package:wms/models/category.dart';
 import 'package:wms/presenters/category/category_presenter.dart';
 import 'package:wms/widgets/wms_drawer.dart';
 
@@ -12,7 +12,7 @@ class CategoryView extends StatefulWidget {
 
 class CategoryViewState extends State<CategoryView> {
   late final CategoryPresenter _presenter;
-  List<wms_category.Category> _categories = [];
+  List<Category> _categories = [];
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -48,7 +48,7 @@ class CategoryViewState extends State<CategoryView> {
     }
   }
 
-  Future<void> _showCategoryDialog({wms_category.Category? category}) async {
+  Future<void> _showCategoryDialog({Category? category}) async {
     final nameController =
     TextEditingController(text: category?.categoryName ?? '');
 
@@ -132,7 +132,7 @@ class CategoryViewState extends State<CategoryView> {
     );
   }
 
-  Future<void> _confirmDelete(wms_category.Category category) async {
+  Future<void> _confirmDelete(Category category) async {
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (alertContext) {
@@ -176,7 +176,7 @@ class CategoryViewState extends State<CategoryView> {
     }
   }
 
-  Widget _buildCategoryCard(wms_category.Category category) {
+  Widget _buildCategoryCard(Category category) {
     return Card(
       elevation: 4,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
