@@ -18,10 +18,8 @@ class UserRepository {
 
   /// Получает список всех пользователей.
   Future<List<User>> getAllUsers() async {
-    final List<Map<String, dynamic>> userMaps =
-        await userAPIService.getAllUsers();
+    final List<Map<String, dynamic>> userMaps = await userAPIService.getAllUsers();
     List<User> users = [];
-    // Для каждого пользователя запрашиваем данные группы через GroupAPIService.
     for (var map in userMaps) {
       int groupId = map['GroupID'];
       final Group group = await groupAPIService.getGroupById(groupId);
@@ -32,8 +30,7 @@ class UserRepository {
 
   /// Получает пользователя по его ID.
   Future<User> getUserById(int userId) async {
-    final Map<String, dynamic> userMap =
-        await userAPIService.getUserById(userId);
+    final Map<String, dynamic> userMap = await userAPIService.getUserById(userId);
     int groupId = userMap['GroupID'] ?? 0;
     final Group group = await groupAPIService.getGroupById(groupId);
     return User.fromJson(userMap, group);

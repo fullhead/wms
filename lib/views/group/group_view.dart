@@ -241,7 +241,12 @@ class GroupViewState extends State<GroupView> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildStatusChip(group),
+                Text(
+                  "Дата создание: ${group.groupCreationDate.toLocal().toString().split('.')[0]}",
+                  style: const TextStyle(fontSize: 13),
+                  overflow: TextOverflow.ellipsis,
+                ),
+
                 Text(
                   "Уровень: ${group.groupAccessLevel}",
                   style: const TextStyle(fontSize: 12),
@@ -254,11 +259,7 @@ class GroupViewState extends State<GroupView> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Flexible(
-                  child: Text(
-                    "Дата создание: ${group.groupCreationDate.toLocal().toString().split('.')[0]}",
-                    style: const TextStyle(fontSize: 13),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  child: _buildStatusChip(group),
                 ),
                 Row(
                   children: [
