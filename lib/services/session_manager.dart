@@ -31,9 +31,10 @@ class SessionManager {
     }
   }
 
-  /// Выполняет выход пользователя, очищая данные авторизации.
+  /// Выполняет выход пользователя, очищая данные авторизации и кэш аватара.
   Future<void> logout() async {
     await AuthStorage.deleteToken();
     await AuthStorage.deleteUserID();
+    await AuthStorage.deleteUserAvatar();
   }
 }

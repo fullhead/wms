@@ -58,11 +58,10 @@ class _AuthorizationViewState extends State<AuthorizationView> {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          // Если ширина экрана меньше 600, используем фиксированные отступы, иначе вычисляем динамически
           final horizontalPadding =
-              constraints.maxWidth < 600 ? 24.0 : constraints.maxWidth * 0.2;
+          constraints.maxWidth < 600 ? 24.0 : constraints.maxWidth * 0.2;
           final topPadding =
-              constraints.maxWidth < 600 ? 120.0 : constraints.maxWidth * 0.1;
+          constraints.maxWidth < 600 ? 120.0 : constraints.maxWidth * 0.1;
           return SingleChildScrollView(
             padding: EdgeInsets.only(
               top: topPadding,
@@ -71,7 +70,6 @@ class _AuthorizationViewState extends State<AuthorizationView> {
               bottom: 16,
             ),
             child: Center(
-              // Ограничиваем ширину содержимого для больших экранов
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 600),
                 child: Form(
@@ -140,19 +138,19 @@ class _AuthorizationViewState extends State<AuthorizationView> {
                       _isLoading
                           ? const Center(child: CircularProgressIndicator())
                           : SizedBox(
-                              height: 48,
-                              child: ElevatedButton(
-                                onPressed: _login,
-                                style: ElevatedButton.styleFrom(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 14),
-                                ),
-                                child: const Text(
-                                  'Войти',
-                                  style: TextStyle(fontSize: 16),
-                                ),
-                              ),
-                            ),
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: _login,
+                          style: ElevatedButton.styleFrom(
+                            padding:
+                            const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: const Text(
+                            'Войти',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),

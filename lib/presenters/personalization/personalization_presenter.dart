@@ -3,6 +3,7 @@ import 'package:wms/repositories/user_repository.dart';
 import 'package:wms/core/constants.dart';
 import 'package:wms/services/session_manager.dart';
 import 'package:wms/presenters/user/user_presenter.dart';
+import 'package:wms/services/auth_storage.dart';
 
 /// Презентер для управления персональными данными пользователя (профилем).
 class PersonalizationPresenter {
@@ -31,14 +32,28 @@ class PersonalizationPresenter {
     return await _userRepository.getUserById(userID);
   }
 
-  /// Обновляет аватар пользователя.
+  /// Обновляет аватар пользователя, используя новый файл.
   /// [avatarImagePath] — путь к новому изображению аватара.
   Future<String> updateAvatar(User user, String avatarImagePath) async {
-    final String newAvatarPath =
-    await _userPresenter.userApiService.uploadUserAvatar(avatarImagePath);
-    // Обновляем поле аватара в объекте пользователя перед вызовом обновления
+    final String newAvatarPath = await _userPresenter.setUserAvatar(user.userID, avatarImagePath);
     user.userAvatar = newAvatarPath;
+    await AuthStorage.saveUserAvatar(newAvatarPath);
     return await _userPresenter.updateUser(user);
+  }
+
+  /// Получает URL аватара текущего пользователя.
+  Future<String> getAvatar(int userId) async {
+    final String avatarUrl = await _userPresenter.getUserAvatar(userId);
+    await AuthStorage.saveUserAvatar(avatarUrl);
+    return avatarUrl;
+  }
+
+  /// Удаляет аватар пользователя и устанавливает дефолтный аватар.
+  Future<String> deleteAvatar(User user) async {
+    final String message = await _userPresenter.deleteUserAvatar(user.userID);
+    user.userAvatar = '/assets/user/no_image_user.png';
+    await AuthStorage.saveUserAvatar('/assets/user/no_image_user.png');
+    return message;
   }
 
   /// Обновляет логин пользователя.

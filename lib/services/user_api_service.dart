@@ -125,10 +125,11 @@ class UserAPIService {
     }
   }
 
-  /// Загружает аватар пользователя.
-  Future<String> uploadUserAvatar(String imagePath) async {
+  /// Устанавливает аватар пользователя.
+  /// Отправляет POST запрос с multipart/form-data на /users/{id}/setUserAvatar.
+  Future<String> setUserAvatar(int userId, String imagePath) async {
     final token = await AuthStorage.getToken();
-    final uri = Uri.parse('$baseUrl/users/upload-avatar');
+    final uri = Uri.parse('$baseUrl/users/$userId/setUserAvatar');
     final request = http.MultipartRequest('POST', uri);
     if (token != null) {
       request.headers['Authorization'] = 'Bearer $token';
@@ -136,14 +137,53 @@ class UserAPIService {
     request.files.add(await http.MultipartFile.fromPath('avatar', imagePath));
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
-    if (response.statusCode == 201) {
-      debugPrint('UserAPIService.uploadUserAvatar: ${response.body}');
+    if (response.statusCode == 200) {
+      debugPrint('UserAPIService.setUserAvatar: ${response.body}');
       final data = jsonDecode(response.body);
-      return data['path'];
+      final newAvatar = data['avatar'];
+      // Кэшируем новый URL аватара
+      await AuthStorage.saveUserAvatar(newAvatar);
+      return newAvatar;
     } else {
       final errorData = jsonDecode(response.body);
-      debugPrint('UserAPIService.uploadUserAvatar error: ${response.body}');
-      throw ApiException(errorData['error'] ?? 'Ошибка при загрузке аватара');
+      debugPrint('UserAPIService.setUserAvatar error: ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Ошибка при установке аватара');
+    }
+  }
+
+  /// Получает аватар пользователя.
+  /// Отправляет GET запрос на /users/{id}/getUserAvatar и возвращает полный URL изображения.
+  Future<String> getUserAvatar(int userId) async {
+    final headers = await _getHeaders();
+    final response = await http.get(Uri.parse('$baseUrl/users/$userId/getUserAvatar'), headers: headers);
+    if (response.statusCode == 200) {
+      debugPrint('UserAPIService.getUserAvatar ($userId) успешно получен');
+      // Формируем URL, по которому изображение доступно
+      final avatarUrl = '$baseUrl/users/$userId/getUserAvatar';
+      await AuthStorage.saveUserAvatar(avatarUrl);
+      return avatarUrl;
+    } else {
+      final errorData = jsonDecode(response.body);
+      debugPrint('UserAPIService.getUserAvatar error ($userId): ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Ошибка при получении аватара');
+    }
+  }
+
+  /// Удаляет аватар пользователя.
+  /// Отправляет DELETE запрос на /users/{id}/deleteUserAvatar.
+  Future<String> deleteUserAvatar(int userId) async {
+    final headers = await _getHeaders();
+    final response = await http.delete(Uri.parse('$baseUrl/users/$userId/deleteUserAvatar'), headers: headers);
+    if (response.statusCode == 200) {
+      debugPrint('UserAPIService.deleteUserAvatar ($userId): ${response.body}');
+      final data = jsonDecode(response.body);
+      // Кэшируем дефолтный аватар
+      await AuthStorage.saveUserAvatar('/assets/user/no_image_user.png');
+      return data['message'] ?? 'Аватар удалён';
+    } else {
+      final errorData = jsonDecode(response.body);
+      debugPrint('UserAPIService.deleteUserAvatar error ($userId): ${response.body}');
+      throw ApiException(errorData['error'] ?? 'Ошибка при удалении аватара');
     }
   }
 

@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:wms/core/constants.dart';
 import 'package:wms/models/warehouse.dart';
 import 'package:wms/presenters/warehouse/warehouse_presenter.dart';
-import 'package:wms/widgets/wms_drawer.dart';
 import 'package:wms/services/auth_storage.dart';
+import 'package:wms/widgets/wms_drawer.dart';
 
 class WarehouseView extends StatefulWidget {
   const WarehouseView({super.key});
@@ -15,21 +15,30 @@ class WarehouseView extends StatefulWidget {
 }
 
 class WarehouseViewState extends State<WarehouseView> {
+  // -------------------------------------------------------
+  // Поля
+  // -------------------------------------------------------
   late final WarehousePresenter _warehousePresenter;
   List<Warehouse> _allWarehouses = [];
   List<Warehouse> _warehouses = [];
+
   bool _isLoading = false;
   String? _token;
 
+  // Поля поиска
   bool _isSearching = false;
   String _searchQuery = '';
 
+  // Поля фильтра
   String? _selectedCell;
   int? _minQuantity;
   int? _maxQuantity;
   DateTime? _startDate;
   DateTime? _endDate;
 
+  // -------------------------------------------------------
+  // Геттеры
+  // -------------------------------------------------------
   int get _activeFilterCount {
     int count = 0;
     if (_selectedCell != null && _selectedCell!.isNotEmpty) count++;
@@ -42,6 +51,9 @@ class WarehouseViewState extends State<WarehouseView> {
 
   bool get _hasActiveFilters => _activeFilterCount > 0;
 
+  // -------------------------------------------------------
+  // Методы жизненного цикла
+  // -------------------------------------------------------
   @override
   void initState() {
     super.initState();
@@ -56,9 +68,7 @@ class WarehouseViewState extends State<WarehouseView> {
   }
 
   Future<void> _loadWarehouses() async {
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
     try {
       final warehouses = await _warehousePresenter.fetchAllWarehouse();
       _allWarehouses = warehouses;
@@ -77,24 +87,27 @@ class WarehouseViewState extends State<WarehouseView> {
     }
   }
 
+  // -------------------------------------------------------
+  // Логика поиска и фильтров
+  // -------------------------------------------------------
   void _applyFilters() {
     List<Warehouse> filtered = List.from(_allWarehouses);
 
-    // Фильтрация по поисковому запросу (наименование продукта)
+    // Фильтр по поиску (по наименованию продукта)
     if (_searchQuery.isNotEmpty) {
       filtered = filtered
           .where((w) => w.warehouseProductID.productName
-              .toLowerCase()
-              .contains(_searchQuery.toLowerCase()))
+          .toLowerCase()
+          .contains(_searchQuery.toLowerCase()))
           .toList();
     }
-    // Фильтрация по ячейке
+    // Фильтр по ячейке
     if (_selectedCell != null && _selectedCell!.isNotEmpty) {
       filtered = filtered
           .where((w) => w.warehouseCellID.cellName == _selectedCell)
           .toList();
     }
-    // Фильтрация по количеству
+    // Фильтр по количеству
     if (_minQuantity != null) {
       filtered =
           filtered.where((w) => w.warehouseQuantity >= _minQuantity!).toList();
@@ -103,46 +116,48 @@ class WarehouseViewState extends State<WarehouseView> {
       filtered =
           filtered.where((w) => w.warehouseQuantity <= _maxQuantity!).toList();
     }
-    // Фильтрация по дате обновления
+    // Фильтр по дате обновления
     if (_startDate != null) {
       filtered = filtered
           .where((w) =>
-              w.warehouseUpdateDate.isAfter(_startDate!) ||
-              w.warehouseUpdateDate.isAtSameMomentAs(_startDate!))
+      w.warehouseUpdateDate.isAfter(_startDate!) ||
+          w.warehouseUpdateDate.isAtSameMomentAs(_startDate!))
           .toList();
     }
     if (_endDate != null) {
       filtered = filtered
           .where((w) =>
-              w.warehouseUpdateDate.isBefore(_endDate!) ||
-              w.warehouseUpdateDate.isAtSameMomentAs(_endDate!))
+      w.warehouseUpdateDate.isBefore(_endDate!) ||
+          w.warehouseUpdateDate.isAtSameMomentAs(_endDate!))
           .toList();
     }
-    setState(() {
-      _warehouses = filtered;
-    });
+
+    setState(() => _warehouses = filtered);
   }
 
+  // -------------------------------------------------------
+  // Диалог фильтров
+  // -------------------------------------------------------
   Future<void> _openFilterDialog() async {
     final size = MediaQuery.of(context).size;
     final isDesktop = size.width > 800;
     final dialogWidth = isDesktop ? size.width * 0.4 : size.width * 0.9;
     final dialogHeight = isDesktop ? size.height * 0.3 : size.height * 0.5;
 
-    // Получаем уникальные ячейки для фильтрации
+    // Дублируем текущие значения для "черновой" правки
     final cells =
-        _allWarehouses.map((w) => w.warehouseCellID.cellName).toSet().toList();
+    _allWarehouses.map((w) => w.warehouseCellID.cellName).toSet().toList();
     String? tempSelectedCell = _selectedCell;
     String? tempMinQuantity = _minQuantity?.toString();
     String? tempMaxQuantity = _maxQuantity?.toString();
     DateTime? tempStartDate = _startDate;
     DateTime? tempEndDate = _endDate;
 
-    // Создаем контроллеры для полей ввода количества
+    // Контроллеры для полей "Мин" и "Макс"
     final TextEditingController minQuantityController =
-        TextEditingController(text: tempMinQuantity ?? '');
+    TextEditingController(text: tempMinQuantity ?? '');
     final TextEditingController maxQuantityController =
-        TextEditingController(text: tempMaxQuantity ?? '');
+    TextEditingController(text: tempMaxQuantity ?? '');
 
     await showDialog(
       context: context,
@@ -168,245 +183,41 @@ class WarehouseViewState extends State<WarehouseView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Фильтр по ячейке с иконкой и изменением стиля, если выбран
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_on,
-                            size: 16,
-                            color:
-                                tempSelectedCell != null ? Colors.blue : null,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Ячейка:',
-                            style: TextStyle(
-                              color:
-                                  tempSelectedCell != null ? Colors.blue : null,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        width: isDesktop
-                            ? MediaQuery.of(context).size.width *
-                                0.5 // 50% экрана на десктопе
-                            : MediaQuery.of(context).size.width *
-                                0.8, // 80% на мобильном
-                        alignment: Alignment.centerLeft,
-                        child: DropdownButton<String>(
-                          isExpanded: true,
-                          value: tempSelectedCell,
-                          hint: const Text('Все ячейки'),
-                          items: cells
-                              .map((cell) => DropdownMenuItem(
-                                    value: cell,
-                                    child: Text(cell),
-                                  ))
-                              .toList(),
-                          onChanged: (value) {
-                            setStateDialog(() {
-                              tempSelectedCell = value;
-                            });
-                          },
-                          underline: Container(),
-                        ),
+                      // Ячейка
+                      _buildFilterCellSection(
+                        isDesktop: isDesktop,
+                        tempSelectedCell: tempSelectedCell,
+                        cells: cells,
+                        setStateDialog: setStateDialog,
                       ),
                       const SizedBox(height: 15),
-                      // Фильтр по количеству с иконкой и изменением стиля если выбран
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.format_list_numbered,
-                            size: 16,
-                            color: ((tempMinQuantity != null &&
-                                        tempMinQuantity!.isNotEmpty) ||
-                                    (tempMaxQuantity != null &&
-                                        tempMaxQuantity!.isNotEmpty))
-                                ? Colors.blue
-                                : null,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Количество (мин - макс):',
-                            style: TextStyle(
-                              color: ((tempMinQuantity != null &&
-                                          tempMinQuantity!.isNotEmpty) ||
-                                      (tempMaxQuantity != null &&
-                                          tempMaxQuantity!.isNotEmpty))
-                                  ? Colors.blue
-                                  : null,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                hintText: 'Мин',
-                              ),
-                              controller: minQuantityController,
-                              onChanged: (value) {
-                                setStateDialog(() {
-                                  tempMinQuantity = value;
-                                });
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 15),
-                          Expanded(
-                            child: TextField(
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                hintText: 'Макс',
-                              ),
-                              controller: maxQuantityController,
-                              onChanged: (value) {
-                                setStateDialog(() {
-                                  tempMaxQuantity = value;
-                                });
-                              },
-                            ),
-                          ),
-                        ],
+                      // Количество
+                      _buildFilterQuantitySection(
+                        tempMinQuantity: tempMinQuantity,
+                        tempMaxQuantity: tempMaxQuantity,
+                        minController: minQuantityController,
+                        maxController: maxQuantityController,
+                        setStateDialog: setStateDialog,
                       ),
                       const SizedBox(height: 15),
-                      // Фильтр по дате обновления с иконкой и изменением стиля если выбран
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.access_time,
-                            size: 16,
-                            color:
-                                (tempStartDate != null || tempEndDate != null)
-                                    ? Colors.blue
-                                    : null,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Дата обновления:',
-                            style: TextStyle(
-                              color:
-                                  (tempStartDate != null || tempEndDate != null)
-                                      ? Colors.blue
-                                      : null,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextButton(
-                              onPressed: () async {
-                                final picked = await showDatePicker(
-                                  context: context,
-                                  locale: const Locale('ru', 'RU'),
-                                  initialDate: tempStartDate ??
-                                      DateTime.now()
-                                          .subtract(const Duration(days: 30)),
-                                  firstDate: DateTime(2000),
-                                  lastDate: DateTime.now(),
-                                );
-                                if (picked != null) {
-                                  setStateDialog(() {
-                                    tempStartDate = picked;
-                                  });
-                                }
-                              },
-                              child: Text(
-                                tempStartDate != null
-                                    ? 'С ${tempStartDate!.toLocal().toString().split(' ')[0]}'
-                                    : 'Начало',
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: TextButton(
-                              onPressed: () async {
-                                final picked = await showDatePicker(
-                                  context: context,
-                                  locale: const Locale('ru', 'RU'),
-                                  initialDate: tempEndDate ?? DateTime.now(),
-                                  firstDate: DateTime(2000),
-                                  lastDate: DateTime.now(),
-                                );
-                                if (picked != null) {
-                                  setStateDialog(() {
-                                    tempEndDate = picked;
-                                  });
-                                }
-                              },
-                              child: Text(
-                                tempEndDate != null
-                                    ? 'По ${tempEndDate!.toLocal().toString().split(' ')[0]}'
-                                    : 'Конец',
-                              ),
-                            ),
-                          ),
-                        ],
+                      // Даты
+                      _buildFilterDateSection(
+                        tempStartDate: tempStartDate,
+                        tempEndDate: tempEndDate,
+                        setStateDialog: setStateDialog,
                       ),
                       const SizedBox(height: 10),
-                      // Чипы для отображения активных фильтров
-                      Wrap(
-                        spacing: 6,
-                        children: [
-                          if (tempSelectedCell != null)
-                            Chip(
-                              label: Text('Ячейка: $tempSelectedCell'),
-                              onDeleted: () {
-                                setStateDialog(() {
-                                  tempSelectedCell = null;
-                                });
-                              },
-                            ),
-                          if (tempMinQuantity != null &&
-                              tempMinQuantity!.isNotEmpty)
-                            Chip(
-                              label: Text('Мин: $tempMinQuantity'),
-                              onDeleted: () {
-                                setStateDialog(() {
-                                  tempMinQuantity = '';
-                                  minQuantityController.text = '';
-                                });
-                              },
-                            ),
-                          if (tempMaxQuantity != null &&
-                              tempMaxQuantity!.isNotEmpty)
-                            Chip(
-                              label: Text('Макс: $tempMaxQuantity'),
-                              onDeleted: () {
-                                setStateDialog(() {
-                                  tempMaxQuantity = '';
-                                  maxQuantityController.text = '';
-                                });
-                              },
-                            ),
-                          if (tempStartDate != null)
-                            Chip(
-                              label: Text(
-                                  'С: ${tempStartDate!.toLocal().toString().split(' ')[0]}'),
-                              onDeleted: () {
-                                setStateDialog(() {
-                                  tempStartDate = null;
-                                });
-                              },
-                            ),
-                          if (tempEndDate != null)
-                            Chip(
-                              label: Text(
-                                  'По: ${tempEndDate!.toLocal().toString().split(' ')[0]}'),
-                              onDeleted: () {
-                                setStateDialog(() {
-                                  tempEndDate = null;
-                                });
-                              },
-                            ),
-                        ],
-                      )
+                      // Чипы активных фильтров
+                      _buildFilterChips(
+                        tempSelectedCell: tempSelectedCell,
+                        tempMinQuantity: tempMinQuantity,
+                        tempMaxQuantity: tempMaxQuantity,
+                        tempStartDate: tempStartDate,
+                        tempEndDate: tempEndDate,
+                        setStateDialog: setStateDialog,
+                        minController: minQuantityController,
+                        maxController: maxQuantityController,
+                      ),
                     ],
                   ),
                 );
@@ -416,6 +227,7 @@ class WarehouseViewState extends State<WarehouseView> {
           actions: [
             TextButton(
               onPressed: () {
+                // Сброс фильтров
                 setState(() {
                   _selectedCell = null;
                   _minQuantity = null;
@@ -430,16 +242,17 @@ class WarehouseViewState extends State<WarehouseView> {
             ),
             TextButton(
               onPressed: () {
+                // Применить изменения
                 setState(() {
                   _selectedCell = tempSelectedCell;
                   _minQuantity =
-                      (tempMinQuantity != null && tempMinQuantity!.isNotEmpty)
-                          ? int.tryParse(tempMinQuantity!)
-                          : null;
+                  (tempMinQuantity != null && tempMinQuantity.isNotEmpty)
+                      ? int.tryParse(tempMinQuantity)
+                      : null;
                   _maxQuantity =
-                      (tempMaxQuantity != null && tempMaxQuantity!.isNotEmpty)
-                          ? int.tryParse(tempMaxQuantity!)
-                          : null;
+                  (tempMaxQuantity != null && tempMaxQuantity.isNotEmpty)
+                      ? int.tryParse(tempMaxQuantity)
+                      : null;
                   _startDate = tempStartDate;
                   _endDate = tempEndDate;
                 });
@@ -454,55 +267,266 @@ class WarehouseViewState extends State<WarehouseView> {
     );
   }
 
-  Widget _buildDialogImage({
-    File? fileImage,
-    String? imageUrl,
-    String? token,
-    double width = 250,
-    double height = 250,
+  // -------------------------------------------------------
+  // Вспомогательные методы для части диалога фильтров
+  // -------------------------------------------------------
+  Widget _buildFilterCellSection({
+    required bool isDesktop,
+    required String? tempSelectedCell,
+    required List<String> cells,
+    required void Function(void Function()) setStateDialog,
   }) {
-    if (fileImage != null) {
-      return Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: FileImage(fileImage),
-            fit: BoxFit.cover,
-          ),
-          color: Colors.grey[300],
-          borderRadius: BorderRadius.circular(4),
-        ),
-      );
-    } else if (imageUrl != null && imageUrl.isNotEmpty) {
-      return Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: CachedNetworkImageProvider(
-              AppConstants.apiBaseUrl + imageUrl,
-              headers:
-                  token != null ? {"Authorization": "Bearer $token"} : null,
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.location_on,
+              size: 16,
+              color: tempSelectedCell != null ? Colors.blue : null,
             ),
-            fit: BoxFit.cover,
-          ),
-          color: Colors.grey[300],
-          borderRadius: BorderRadius.circular(4),
+            const SizedBox(width: 4),
+            Text(
+              'Ячейка:',
+              style: TextStyle(
+                color: tempSelectedCell != null ? Colors.blue : null,
+              ),
+            ),
+          ],
         ),
-      );
-    }
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: Colors.grey[300],
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: const Icon(Icons.inventory, size: 50),
+        Container(
+          width: isDesktop
+              ? MediaQuery.of(context).size.width * 0.5
+              : MediaQuery.of(context).size.width * 0.8,
+          alignment: Alignment.centerLeft,
+          child: DropdownButton<String>(
+            isExpanded: true,
+            value: tempSelectedCell,
+            hint: const Text('Все ячейки'),
+            items: cells
+                .map(
+                  (cell) => DropdownMenuItem(
+                value: cell,
+                child: Text(cell),
+              ),
+            )
+                .toList(),
+            onChanged: (value) {
+              setStateDialog(() {
+                tempSelectedCell = value;
+              });
+            },
+            underline: Container(),
+          ),
+        ),
+      ],
     );
   }
 
+  Widget _buildFilterQuantitySection({
+    required String? tempMinQuantity,
+    required String? tempMaxQuantity,
+    required TextEditingController minController,
+    required TextEditingController maxController,
+    required void Function(void Function()) setStateDialog,
+  }) {
+    final hasQuantityFilter = (tempMinQuantity != null && tempMinQuantity.isNotEmpty) ||
+        (tempMaxQuantity != null && tempMaxQuantity.isNotEmpty);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.format_list_numbered,
+              size: 16,
+              color: hasQuantityFilter ? Colors.blue : null,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'Количество (мин - макс):',
+              style: TextStyle(
+                color: hasQuantityFilter ? Colors.blue : null,
+              ),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(hintText: 'Мин'),
+                controller: minController,
+                onChanged: (value) {
+                  setStateDialog(() {
+                    tempMinQuantity = value;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: TextField(
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(hintText: 'Макс'),
+                controller: maxController,
+                onChanged: (value) {
+                  setStateDialog(() {
+                    tempMaxQuantity = value;
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterDateSection({
+    required DateTime? tempStartDate,
+    required DateTime? tempEndDate,
+    required void Function(void Function()) setStateDialog,
+  }) {
+    final hasDateFilter = tempStartDate != null || tempEndDate != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.access_time,
+              size: 16,
+              color: hasDateFilter ? Colors.blue : null,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'Дата обновления:',
+              style: TextStyle(color: hasDateFilter ? Colors.blue : null),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: TextButton(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    locale: const Locale('ru', 'RU'),
+                    initialDate:
+                    tempStartDate ?? DateTime.now().subtract(const Duration(days: 30)),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime.now(),
+                  );
+                  if (picked != null) {
+                    setStateDialog(() => tempStartDate = picked);
+                  }
+                },
+                child: Text(
+                  tempStartDate != null
+                      ? 'С ${tempStartDate.toLocal().toString().split(' ')[0]}'
+                      : 'Начало',
+                ),
+              ),
+            ),
+            Expanded(
+              child: TextButton(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    locale: const Locale('ru', 'RU'),
+                    initialDate: tempEndDate ?? DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime.now(),
+                  );
+                  if (picked != null) {
+                    setStateDialog(() => tempEndDate = picked);
+                  }
+                },
+                child: Text(
+                  tempEndDate != null
+                      ? 'По ${tempEndDate.toLocal().toString().split(' ')[0]}'
+                      : 'Конец',
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterChips({
+    required String? tempSelectedCell,
+    required String? tempMinQuantity,
+    required String? tempMaxQuantity,
+    required DateTime? tempStartDate,
+    required DateTime? tempEndDate,
+    required void Function(void Function()) setStateDialog,
+    required TextEditingController minController,
+    required TextEditingController maxController,
+  }) {
+    final chips = <Widget>[];
+
+    if (tempSelectedCell != null) {
+      chips.add(
+        Chip(
+          label: Text('Ячейка: $tempSelectedCell'),
+          onDeleted: () => setStateDialog(() => tempSelectedCell = null),
+        ),
+      );
+    }
+    if (tempMinQuantity != null && tempMinQuantity.isNotEmpty) {
+      chips.add(
+        Chip(
+          label: Text('Мин: $tempMinQuantity'),
+          onDeleted: () => setStateDialog(() {
+            tempMinQuantity = '';
+            minController.text = '';
+          }),
+        ),
+      );
+    }
+    if (tempMaxQuantity != null && tempMaxQuantity.isNotEmpty) {
+      chips.add(
+        Chip(
+          label: Text('Макс: $tempMaxQuantity'),
+          onDeleted: () => setStateDialog(() {
+            tempMaxQuantity = '';
+            maxController.text = '';
+          }),
+        ),
+      );
+    }
+    if (tempStartDate != null) {
+      chips.add(
+        Chip(
+          label: Text('С: ${tempStartDate.toLocal().toString().split(' ')[0]}'),
+          onDeleted: () => setStateDialog(() => tempStartDate = null),
+        ),
+      );
+    }
+    if (tempEndDate != null) {
+      chips.add(
+        Chip(
+          label: Text('По: ${tempEndDate.toLocal().toString().split(' ')[0]}'),
+          onDeleted: () => setStateDialog(() => tempEndDate = null),
+        ),
+      );
+    }
+
+    return Wrap(spacing: 6, children: chips);
+  }
+
+  // -------------------------------------------------------
+  // Детали склада
+  // -------------------------------------------------------
   void _showWarehouseDetails(Warehouse warehouse) {
     showDialog(
       context: context,
@@ -560,83 +584,31 @@ class WarehouseViewState extends State<WarehouseView> {
                         ),
                         const SizedBox(height: 20),
                         const Divider(height: 20),
-                        Row(
-                          children: [
-                            const Icon(Icons.inventory, size: 16),
-                            const SizedBox(width: 4),
-                            const Text(
-                              "Продукт:",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                warehouse.warehouseProductID.productName,
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                            ),
-                          ],
+                        _buildDetailRow(
+                          icon: Icons.inventory,
+                          label: "Продукт:",
+                          value: warehouse.warehouseProductID.productName,
                         ),
                         const Divider(height: 20),
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on, size: 16),
-                            const SizedBox(width: 4),
-                            const Text(
-                              "Ячейка:",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                warehouse.warehouseCellID.cellName,
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                            ),
-                          ],
+                        _buildDetailRow(
+                          icon: Icons.location_on,
+                          label: "Ячейка:",
+                          value: warehouse.warehouseCellID.cellName,
                         ),
                         const Divider(height: 20),
-                        Row(
-                          children: [
-                            const Icon(Icons.format_list_numbered, size: 16),
-                            const SizedBox(width: 4),
-                            const Text(
-                              "Количество:",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                warehouse.warehouseQuantity.toString(),
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                            ),
-                          ],
+                        _buildDetailRow(
+                          icon: Icons.format_list_numbered,
+                          label: "Количество:",
+                          value: warehouse.warehouseQuantity.toString(),
                         ),
                         const Divider(height: 20),
-                        Row(
-                          children: [
-                            const Icon(Icons.access_time, size: 16),
-                            const SizedBox(width: 4),
-                            const Text(
-                              "Обновлено:",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                warehouse.warehouseUpdateDate
-                                    .toLocal()
-                                    .toString()
-                                    .split('.')[0],
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                            ),
-                          ],
+                        _buildDetailRow(
+                          icon: Icons.access_time,
+                          label: "Обновлено:",
+                          value: warehouse.warehouseUpdateDate
+                              .toLocal()
+                              .toString()
+                              .split('.')[0],
                         ),
                         const Divider(height: 20),
                       ],
@@ -644,10 +616,7 @@ class WarehouseViewState extends State<WarehouseView> {
                     Center(
                       child: TextButton(
                         onPressed: () => Navigator.of(ctx).pop(),
-                        child: const Text(
-                          "Закрыть",
-                          style: TextStyle(fontSize: 16),
-                        ),
+                        child: const Text("Закрыть", style: TextStyle(fontSize: 16)),
                       ),
                     ),
                   ],
@@ -660,162 +629,269 @@ class WarehouseViewState extends State<WarehouseView> {
     );
   }
 
+  Widget _buildDetailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+
+    return Row(
+      children: [
+        Icon(icon, size: 16),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(value, style: const TextStyle(fontSize: 16)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDialogImage({
+    File? fileImage,
+    String? imageUrl,
+    String? token,
+    double width = 250,
+    double height = 250,
+  }) {
+    // Если выбрано локальное изображение
+    if (fileImage != null) {
+      return Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: FileImage(fileImage),
+            fit: BoxFit.cover,
+          ),
+          color: Colors.grey[300],
+          borderRadius: BorderRadius.circular(4),
+        ),
+      );
+    }
+    // Если есть ссылка на изображение
+    else if (imageUrl != null && imageUrl.isNotEmpty) {
+      return Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: CachedNetworkImageProvider(
+              AppConstants.apiBaseUrl + imageUrl,
+              headers: token != null ? {"Authorization": "Bearer $token"} : null,
+            ),
+            fit: BoxFit.cover,
+          ),
+          color: Colors.grey[300],
+          borderRadius: BorderRadius.circular(4),
+        ),
+      );
+    }
+    // Если нет изображения
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Icon(Icons.inventory, size: 50),
+    );
+  }
+
+  // -------------------------------------------------------
+  // Список карточек
+  // -------------------------------------------------------
   Widget _buildWarehouseCard(Warehouse warehouse) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        leading: warehouse.warehouseProductID.productImage.isNotEmpty
-            ? CircleAvatar(
-                radius: 30,
-                backgroundImage: CachedNetworkImageProvider(
-                  AppConstants.apiBaseUrl +
-                      warehouse.warehouseProductID.productImage,
-                  headers: _token != null
-                      ? {"Authorization": "Bearer $_token"}
-                      : null,
-                ),
-                backgroundColor: Colors.grey[300],
-              )
-            : CircleAvatar(
-                radius: 30,
-                backgroundColor: Colors.grey[300],
-                child: const Icon(Icons.inventory),
-              ),
+        leading: _buildLeadingAvatar(warehouse),
         title: Text(
           warehouse.warehouseProductID.productName,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.location_on, size: 14),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text("Ячейка: ${warehouse.warehouseCellID.cellName}"),
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                const Icon(Icons.format_list_numbered, size: 14),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text("Количество: ${warehouse.warehouseQuantity}"),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.access_time, size: 14),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    "Обновлено: ${warehouse.warehouseUpdateDate.toLocal().toString().split('.')[0]}",
-                    style: const TextStyle(fontSize: 10),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+        subtitle: _buildWarehouseSubtitle(warehouse),
         onTap: () => _showWarehouseDetails(warehouse),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildLeadingAvatar(Warehouse warehouse) {
+    final imageUrl = warehouse.warehouseProductID.productImage;
+    if (imageUrl.isNotEmpty) {
+      return CircleAvatar(
+        radius: 30,
+        backgroundImage: CachedNetworkImageProvider(
+          AppConstants.apiBaseUrl + imageUrl,
+          headers: _token != null ? {"Authorization": "Bearer $_token"} : null,
+        ),
+        backgroundColor: Colors.grey[300],
+      );
+    }
+    return const CircleAvatar(
+      radius: 30,
+      backgroundColor: Colors.grey,
+      child: Icon(Icons.inventory),
+    );
+  }
+
+  Widget _buildWarehouseSubtitle(Warehouse warehouse) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            const Icon(Icons.location_on, size: 14),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text("Ячейка: ${warehouse.warehouseCellID.cellName}"),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            const Icon(Icons.format_list_numbered, size: 14),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text("Количество: ${warehouse.warehouseQuantity}"),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            const Icon(Icons.access_time, size: 14),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                "Обновлено: ${warehouse.warehouseUpdateDate.toLocal().toString().split('.')[0]}",
+                style: const TextStyle(fontSize: 10),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWarehouseList() {
     final displayedWarehouses = _warehouses.where((w) {
+      // Повторное наложение поиска (если нужно)
       return _searchQuery.isEmpty ||
           w.warehouseProductID.productName
               .toLowerCase()
               .contains(_searchQuery.toLowerCase());
     }).toList();
 
+    return RefreshIndicator(
+      onRefresh: _loadWarehouses,
+      child: ListView.builder(
+        itemCount: displayedWarehouses.length,
+        itemBuilder: (context, index) {
+          final warehouse = displayedWarehouses[index];
+          return _buildWarehouseCard(warehouse);
+        },
+      ),
+    );
+  }
+
+  // -------------------------------------------------------
+  // Построение тела
+  // -------------------------------------------------------
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return _buildWarehouseList();
+  }
+
+  // -------------------------------------------------------
+  // Основной build
+  // -------------------------------------------------------
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: _isSearching
             ? TextField(
-                autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: "Поиск по наименованию...",
-                  border: InputBorder.none,
-                ),
-                style: const TextStyle(color: Colors.black),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                    _applyFilters();
-                  });
-                },
-              )
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: "Поиск по наименованию...",
+            border: InputBorder.none,
+          ),
+          style: const TextStyle(color: Colors.black),
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value;
+              _applyFilters();
+            });
+          },
+        )
             : const Text('Склад'),
         actions: _isSearching
             ? [
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    setState(() {
-                      _isSearching = false;
-                      _searchQuery = '';
-                      _applyFilters();
-                    });
-                  },
-                ),
-              ]
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () {
+              setState(() {
+                _isSearching = false;
+                _searchQuery = '';
+                _applyFilters();
+              });
+            },
+          ),
+        ]
             : [
-                IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: () {
-                    setState(() {
-                      _isSearching = true;
-                    });
-                  },
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              setState(() => _isSearching = true);
+            },
+          ),
+          // Кнопка фильтров с иконкой и бейджем
+          Stack(
+            children: [
+              IconButton(
+                icon: Icon(
+                  _hasActiveFilters ? Icons.filter_alt : Icons.filter_list,
+                  color: Colors.black,
                 ),
-                // Кнопка фильтров с изменяемой иконкой и бейджем с количеством
-                Stack(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        _hasActiveFilters
-                            ? Icons.filter_alt
-                            : Icons.filter_list,
-                        color: Colors.black,
-                      ),
-                      onPressed: _openFilterDialog,
+                onPressed: _openFilterDialog,
+              ),
+              if (_activeFilterCount > 0)
+                Positioned(
+                  right: 4,
+                  top: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
                     ),
-                    if (_activeFilterCount > 0)
-                      Positioned(
-                        right: 4,
-                        top: 4,
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Text(
-                            '$_activeFilterCount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      '$_activeFilterCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
                       ),
-                  ],
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ),
-              ],
+            ],
+          ),
+        ],
       ),
       drawer: const WmsDrawer(),
       body: LayoutBuilder(
@@ -823,18 +899,7 @@ class WarehouseViewState extends State<WarehouseView> {
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 800),
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : RefreshIndicator(
-                      onRefresh: _loadWarehouses,
-                      child: ListView.builder(
-                        itemCount: displayedWarehouses.length,
-                        itemBuilder: (context, index) {
-                          final warehouse = displayedWarehouses[index];
-                          return _buildWarehouseCard(warehouse);
-                        },
-                      ),
-                    ),
+              child: _buildBody(),
             ),
           );
         },

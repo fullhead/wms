@@ -11,49 +11,75 @@ class SplashScreen extends StatefulWidget {
 }
 
 class SplashScreenState extends State<SplashScreen> {
+  // -------------------------------------------------------
+  // Поля
+  // -------------------------------------------------------
   bool _hasError = false;
   String? _errorMessage;
 
+  // -------------------------------------------------------
+  // Жизненный цикл
+  // -------------------------------------------------------
   @override
   void initState() {
     super.initState();
-    _init();
+    _initSplash();
   }
 
-  Future<void> _init() async {
+  // -------------------------------------------------------
+  // Инициализация сплеша
+  // -------------------------------------------------------
+  Future<void> _initSplash() async {
     try {
       final token = await AuthStorage.getToken();
       final destinationRoute = (token != null && token.isNotEmpty)
           ? AppRoutes.dashboard
           : AppRoutes.authorization;
-      // Ждём 4 секунды, чтобы анимация воспроизвелась полностью
+
+      // Ждем 4 секунды для воспроизведения анимации
       await Future.delayed(const Duration(seconds: 4));
+
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, destinationRoute);
     } catch (error) {
-      setState(() {
-        _hasError = true;
-        _errorMessage = error.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = error.toString();
+        });
+      }
     }
   }
 
+  // -------------------------------------------------------
+  // Построение экрана
+  // -------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     if (_hasError) {
-      return Scaffold(
-        body: Center(child: Text("Ошибка: $_errorMessage")),
-      );
+      return _buildErrorView();
     }
+    return _buildSplashAnimation();
+  }
+
+  Widget _buildErrorView() {
+    return Scaffold(
+      body: Center(
+        child: Text("Ошибка: $_errorMessage"),
+      ),
+    );
+  }
+
+  Widget _buildSplashAnimation() {
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
-          // Вычисляем размеры экрана
+          // Определяем размер анимации: 50% от меньшей стороны экрана
           final screenWidth = constraints.maxWidth;
           final screenHeight = constraints.maxHeight;
-          // Устанавливаем размер анимации как 50% от меньшей стороны экрана
           final animationSize =
               (screenWidth < screenHeight ? screenWidth : screenHeight) * 0.5;
+
           return Center(
             child: Lottie.asset(
               'lib/assets/splash_animation.json',

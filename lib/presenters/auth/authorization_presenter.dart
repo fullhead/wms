@@ -8,7 +8,7 @@ class AuthorizationPresenter {
 
   AuthorizationPresenter({UserAPIService? userAPIService})
       : _userAPIService =
-            userAPIService ?? UserAPIService(baseUrl: AppConstants.apiBaseUrl);
+      userAPIService ?? UserAPIService(baseUrl: AppConstants.apiBaseUrl);
 
   Future<void> login(String username, String password) async {
     final credentials = {'username': username, 'password': password};
@@ -25,6 +25,7 @@ class AuthorizationPresenter {
 
         final userID = response['userID']?.toString() ?? '';
         await AuthStorage.saveUserID(userID);
+        await AuthStorage.deleteUserAvatar();
       } else {
         throw 'Токен не получен';
       }

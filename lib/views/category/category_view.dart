@@ -11,11 +11,17 @@ class CategoryView extends StatefulWidget {
 }
 
 class CategoryViewState extends State<CategoryView> {
+  // -------------------------------------------------------
+  // Поля
+  // -------------------------------------------------------
   late final CategoryPresenter _presenter;
   List<Category> _categories = [];
   bool _isLoading = false;
   String? _errorMessage;
 
+  // -------------------------------------------------------
+  // Методы жизненного цикла
+  // -------------------------------------------------------
   @override
   void initState() {
     super.initState();
@@ -41,16 +47,18 @@ class CategoryViewState extends State<CategoryView> {
       });
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
 
+  // -------------------------------------------------------
+  // Методы для создания/редактирования категории
+  // -------------------------------------------------------
   Future<void> _showCategoryDialog({Category? category}) async {
-    final nameController =
-    TextEditingController(text: category?.categoryName ?? '');
+    final nameController = TextEditingController(
+      text: category?.categoryName ?? '',
+    );
 
     await showDialog(
       context: context,
@@ -59,10 +67,11 @@ class CategoryViewState extends State<CategoryView> {
           builder: (dialogContext, setStateDialog) {
             return AlertDialog(
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              title: Text(category == null
-                  ? 'Добавить категорию'
-                  : 'Редактировать категорию'),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Text(
+                category == null ? 'Добавить категорию' : 'Редактировать категорию',
+              ),
               content: SingleChildScrollView(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 400),
@@ -90,19 +99,21 @@ class CategoryViewState extends State<CategoryView> {
                     final name = nameController.text.trim();
                     if (name.isEmpty) {
                       ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        const SnackBar(
-                            content: Text('Название обязательно')),
+                        const SnackBar(content: Text('Название обязательно')),
                       );
                       return;
                     }
                     try {
                       String responseMessage;
                       if (category == null) {
-                        responseMessage =
-                        await _presenter.createCategory(categoryName: name);
+                        responseMessage = await _presenter.createCategory(
+                          categoryName: name,
+                        );
                       } else {
-                        responseMessage =
-                        await _presenter.updateCategory(category, name: name);
+                        responseMessage = await _presenter.updateCategory(
+                          category,
+                          name: name,
+                        );
                       }
                       if (!dialogContext.mounted) return;
                       Navigator.pop(dialogContext);
@@ -132,16 +143,21 @@ class CategoryViewState extends State<CategoryView> {
     );
   }
 
+  // -------------------------------------------------------
+  // Методы для удаления категории
+  // -------------------------------------------------------
   Future<void> _confirmDelete(Category category) async {
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (alertContext) {
         return AlertDialog(
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Text('Подтверждение'),
           content: Text(
-              'Вы уверены, что хотите удалить категорию "${category.categoryName}"?'),
+            'Вы уверены, что хотите удалить категорию "${category.categoryName}"?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(alertContext, false),
@@ -157,8 +173,7 @@ class CategoryViewState extends State<CategoryView> {
     );
     if (confirmed == true) {
       try {
-        String responseMessage =
-        await _presenter.deleteCategory(category);
+        final responseMessage = await _presenter.deleteCategory(category);
         await _loadCategories();
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -176,14 +191,16 @@ class CategoryViewState extends State<CategoryView> {
     }
   }
 
+  // -------------------------------------------------------
+  // Вспомогательные методы отрисовки
+  // -------------------------------------------------------
   Widget _buildCategoryCard(Category category) {
     return Card(
       elevation: 4,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ListTile(
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         title: Text(
           category.categoryName,
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -218,6 +235,7 @@ class CategoryViewState extends State<CategoryView> {
 
   Widget _buildCategoryList() {
     if (_categories.isEmpty) {
+      // Плашка, если нет категорий
       return const Center(
         child: Text('Нет категорий. Добавьте новую категорию.'),
       );
@@ -232,6 +250,22 @@ class CategoryViewState extends State<CategoryView> {
     );
   }
 
+  Widget _buildBody() {
+    // Если идёт загрузка
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    // Если есть ошибка
+    if (_errorMessage != null) {
+      return Center(child: Text(_errorMessage!));
+    }
+    // Иначе рендерим список (возможен пустой или нет)
+    return _buildCategoryList();
+  }
+
+  // -------------------------------------------------------
+  // Основной build
+  // -------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -246,11 +280,7 @@ class CategoryViewState extends State<CategoryView> {
               constraints: const BoxConstraints(maxWidth: 800),
               child: RefreshIndicator(
                 onRefresh: _loadCategories,
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _errorMessage != null
-                    ? Center(child: Text(_errorMessage!))
-                    : _buildCategoryList(),
+                child: _buildBody(),
               ),
             ),
           );

@@ -10,11 +10,10 @@ class UserRepository {
 
   UserRepository({
     UserAPIService? userAPIService,
-    GroupAPIService? groupAPIService, required String baseUrl
-  })  : userAPIService = userAPIService ??
-            UserAPIService(baseUrl: baseUrl),
-        groupAPIService = groupAPIService ??
-            GroupAPIService(baseUrl: baseUrl);
+    GroupAPIService? groupAPIService,
+    required String baseUrl,
+  })  : userAPIService = userAPIService ?? UserAPIService(baseUrl: baseUrl),
+        groupAPIService = groupAPIService ?? GroupAPIService(baseUrl: baseUrl);
 
   /// Получает список всех пользователей.
   Future<List<User>> getAllUsers() async {
@@ -49,5 +48,25 @@ class UserRepository {
   /// Удаляет пользователя по его ID.
   Future<String> deleteUser(int userID) async {
     return await userAPIService.deleteUser(userID);
+  }
+
+  /// Новый метод: Устанавливает новый аватар для пользователя.
+  Future<String> setUserAvatar(int userId, String imagePath) async {
+    return await userAPIService.setUserAvatar(userId, imagePath);
+  }
+
+  /// Новый метод: Получает URL аватара пользователя.
+  Future<String> getUserAvatar(int userId) async {
+    return await userAPIService.getUserAvatar(userId);
+  }
+
+  /// Новый метод: Удаляет аватар пользователя.
+  Future<String> deleteUserAvatar(int userId) async {
+    return await userAPIService.deleteUserAvatar(userId);
+  }
+
+  /// Обновляет токен пользователя.
+  Future<String> refreshToken() async {
+    return await userAPIService.refreshToken();
   }
 }

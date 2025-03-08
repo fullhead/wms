@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:barcode_scan2/barcode_scan2.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,7 +9,6 @@ import 'package:wms/models/product.dart';
 import 'package:wms/presenters/product/product_presenter.dart';
 import 'package:wms/services/auth_storage.dart';
 import 'package:wms/widgets/wms_drawer.dart';
-import 'package:barcode_scan2/barcode_scan2.dart';
 
 class ProductView extends StatefulWidget {
   const ProductView({super.key});
@@ -18,15 +18,22 @@ class ProductView extends StatefulWidget {
 }
 
 class ProductViewState extends State<ProductView> {
+  // -------------------------------------------------------
+  // Поля класса
+  // -------------------------------------------------------
   final ProductPresenter _presenter = ProductPresenter();
-  final List<Product> _products = [];
-  bool _isLoading = false;
-  String? _token;
-  bool _isSearching = false;
-  String _searchQuery = '';
   final ImagePicker _picker = ImagePicker();
+  final List<Product> _products = [];
   final List<int> _selectedCategoryIds = [];
 
+  bool _isLoading = false;
+  bool _isSearching = false;
+  String _searchQuery = '';
+  String? _token;
+
+  // -------------------------------------------------------
+  // Методы жизненного цикла
+  // -------------------------------------------------------
   @override
   void initState() {
     super.initState();
@@ -43,6 +50,7 @@ class ProductViewState extends State<ProductView> {
     setState(() => _isLoading = true);
     try {
       final products = await _presenter.fetchAllProduct();
+      if (!mounted) return;
       setState(() {
         _products
           ..clear()
@@ -57,10 +65,13 @@ class ProductViewState extends State<ProductView> {
         ),
       );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  // -------------------------------------------------------
+  // Приватные методы для диалогов и т. п.
+  // -------------------------------------------------------
   Future<List<Category>> _loadCategoriesForProduct() async {
     final data = await _presenter.categoryApiService.getAllCategory();
     return data.map((json) => Category.fromJson(json)).toList();
@@ -106,10 +117,11 @@ class ProductViewState extends State<ProductView> {
     }
   }
 
+  // -------------------------------------------------------
+  // Методы поиска и фильтрации
+  // -------------------------------------------------------
   void _searchStub() {
-    setState(() {
-      _isSearching = true;
-    });
+    setState(() => _isSearching = true);
   }
 
   void _stopSearch() {
@@ -123,6 +135,7 @@ class ProductViewState extends State<ProductView> {
     final categories = await _loadCategoriesForProduct();
     final tempSelected = Set<int>.from(_selectedCategoryIds);
     if (!mounted) return;
+
     await showDialog(
       context: context,
       builder: (dialogContext) {
@@ -173,6 +186,9 @@ class ProductViewState extends State<ProductView> {
     );
   }
 
+  // -------------------------------------------------------
+  // Методы отображения продукта (детали, редактирование, создание, удаление)
+  // -------------------------------------------------------
   void _showProductDetails(Product product) {
     showDialog(
       context: context,
@@ -229,7 +245,10 @@ class ProductViewState extends State<ProductView> {
                           _showEditProductDialog(product);
                         },
                         icon: const Icon(Icons.edit, color: Colors.blue),
-                        label: const Text("Редактировать", style: TextStyle(color: Colors.blue)),
+                        label: const Text(
+                          "Редактировать",
+                          style: TextStyle(color: Colors.blue),
+                        ),
                       ),
                       TextButton.icon(
                         onPressed: () {
@@ -237,7 +256,10 @@ class ProductViewState extends State<ProductView> {
                           _confirmDeleteProduct(product);
                         },
                         icon: const Icon(Icons.delete, color: Colors.red),
-                        label: const Text("Удалить", style: TextStyle(color: Colors.red)),
+                        label: const Text(
+                          "Удалить",
+                          style: TextStyle(color: Colors.red),
+                        ),
                       ),
                     ],
                   ),
@@ -253,16 +275,19 @@ class ProductViewState extends State<ProductView> {
   Future<void> _showEditProductDialog(Product product) async {
     final parentContext = context;
     final editFormKey = GlobalKey<FormState>();
+
     String editedName = product.productName;
     String editedBarcode = product.productBarcode;
     Category? editedCategory = product.productCategory;
     File? editedImage;
     List<Category> allCategories = [];
 
+    // Загрузка категорий
     try {
       allCategories = await _loadCategoriesForProduct();
       final foundIndex = allCategories.indexWhere(
-              (cat) => cat.categoryID == product.productCategory.categoryID);
+            (cat) => cat.categoryID == product.productCategory.categoryID,
+      );
       if (foundIndex >= 0) {
         editedCategory = allCategories[foundIndex];
       } else if (allCategories.isNotEmpty) {
@@ -280,6 +305,7 @@ class ProductViewState extends State<ProductView> {
     }
     if (!mounted) return;
 
+    // Построение диалога
     showDialog(
       context: context,
       builder: (inDialogContext) {
@@ -304,6 +330,7 @@ class ProductViewState extends State<ProductView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // Изображение продукта
                         GestureDetector(
                           onTap: () async {
                             final result = await _showImageSourceSelectionDialog(inDialogContext);
@@ -332,15 +359,17 @@ class ProductViewState extends State<ProductView> {
                           child: const Text("Изменить изображение"),
                         ),
                         const SizedBox(height: 20),
+                        // Поля ввода
                         TextFormField(
-                          initialValue: product.productName,
+                          initialValue: editedName,
                           decoration: const InputDecoration(labelText: "Название продукта"),
-                          validator: (value) => value == null || value.isEmpty ? "Введите название" : null,
+                          validator: (value) =>
+                          (value == null || value.isEmpty) ? "Введите название" : null,
                           onSaved: (value) => editedName = value!,
                         ),
                         const SizedBox(height: 10),
                         TextFormField(
-                          initialValue: product.productBarcode,
+                          initialValue: editedBarcode,
                           decoration: InputDecoration(
                             labelText: "Штрихкод",
                             suffixIcon: IconButton(
@@ -353,19 +382,21 @@ class ProductViewState extends State<ProductView> {
                               },
                             ),
                           ),
-                          validator: (value) => value == null || value.isEmpty ? "Введите штрихкод" : null,
+                          validator: (value) =>
+                          (value == null || value.isEmpty) ? "Введите штрихкод" : null,
                           onSaved: (value) => editedBarcode = value!,
                         ),
                         const SizedBox(height: 10),
+                        // Выбор категории
                         DropdownButtonFormField<Category>(
                           decoration: const InputDecoration(labelText: "Категория"),
                           value: editedCategory,
-                          items: allCategories
-                              .map((cat) => DropdownMenuItem<Category>(
-                            value: cat,
-                            child: Text(cat.categoryName),
-                          ))
-                              .toList(),
+                          items: allCategories.map((cat) {
+                            return DropdownMenuItem<Category>(
+                              value: cat,
+                              child: Text(cat.categoryName),
+                            );
+                          }).toList(),
                           onChanged: (newValue) {
                             setStateDialog(() {
                               editedCategory = newValue;
@@ -392,14 +423,18 @@ class ProductViewState extends State<ProductView> {
                   try {
                     String imagePath = product.productImage;
                     if (editedImage != null) {
-                      imagePath = await _presenter.productApiService.uploadProductImage(editedImage!.path);
+                      imagePath = await _presenter.productApiService.uploadProductImage(
+                        editedImage!.path,
+                      );
                     }
+                    // Обновляем поля продукта
                     product.productName = editedName;
                     product.productBarcode = editedBarcode;
                     product.productImage = imagePath;
                     if (editedCategory != null) {
                       product.productCategory = editedCategory!;
                     }
+                    // Сохраняем
                     final responseMessage = await _presenter.updateProduct(product);
                     if (inDialogContext.mounted) {
                       Navigator.of(inDialogContext).pop();
@@ -437,12 +472,14 @@ class ProductViewState extends State<ProductView> {
   Future<void> _showCreateProductDialog() async {
     final parentContext = context;
     final createFormKey = GlobalKey<FormState>();
+    final barcodeController = TextEditingController();
+
     String newName = '';
     Category? newCategory;
     File? newImage;
-    final TextEditingController barcodeController = TextEditingController();
     List<Category> allCategories = [];
 
+    // Загрузка категорий
     try {
       allCategories = await _loadCategoriesForProduct();
       if (allCategories.isNotEmpty) {
@@ -460,6 +497,7 @@ class ProductViewState extends State<ProductView> {
     }
     if (!mounted) return;
 
+    // Построение диалога
     showDialog(
       context: context,
       builder: (inDialogContext) {
@@ -483,6 +521,7 @@ class ProductViewState extends State<ProductView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // Изображение продукта
                         GestureDetector(
                           onTap: () async {
                             final result = await _showImageSourceSelectionDialog(inDialogContext);
@@ -511,9 +550,12 @@ class ProductViewState extends State<ProductView> {
                           child: const Text("Выбрать изображение"),
                         ),
                         const SizedBox(height: 20),
+
+                        // Поля ввода
                         TextFormField(
                           decoration: const InputDecoration(labelText: "Название продукта"),
-                          validator: (value) => value == null || value.isEmpty ? "Введите название" : null,
+                          validator: (value) =>
+                          (value == null || value.isEmpty) ? "Введите название" : null,
                           onSaved: (value) => newName = value!,
                         ),
                         const SizedBox(height: 10),
@@ -531,18 +573,20 @@ class ProductViewState extends State<ProductView> {
                               },
                             ),
                           ),
-                          validator: (value) => value == null || value.isEmpty ? "Введите штрихкод" : null,
+                          validator: (value) =>
+                          (value == null || value.isEmpty) ? "Введите штрихкод" : null,
                         ),
                         const SizedBox(height: 10),
+                        // Выбор категории
                         DropdownButtonFormField<Category>(
                           decoration: const InputDecoration(labelText: "Категория"),
                           value: newCategory,
-                          items: allCategories
-                              .map((cat) => DropdownMenuItem<Category>(
-                            value: cat,
-                            child: Text(cat.categoryName),
-                          ))
-                              .toList(),
+                          items: allCategories.map((cat) {
+                            return DropdownMenuItem<Category>(
+                              value: cat,
+                              child: Text(cat.categoryName),
+                            );
+                          }).toList(),
                           onChanged: (newValue) {
                             setStateDialog(() {
                               newCategory = newValue;
@@ -656,6 +700,9 @@ class ProductViewState extends State<ProductView> {
     }
   }
 
+  // -------------------------------------------------------
+  // Построение интерфейса
+  // -------------------------------------------------------
   Widget _buildDialogImage({
     File? fileImage,
     String? imageUrl,
@@ -664,6 +711,7 @@ class ProductViewState extends State<ProductView> {
     double width = 250,
     double height = 250,
   }) {
+    // Если выбрано локальное изображение
     if (fileImage != null) {
       return Container(
         width: width,
@@ -677,7 +725,9 @@ class ProductViewState extends State<ProductView> {
           borderRadius: BorderRadius.circular(4),
         ),
       );
-    } else if (imageUrl != null && imageUrl.isNotEmpty) {
+    }
+    // Если есть ссылка на изображение
+    else if (imageUrl != null && imageUrl.isNotEmpty) {
       return Container(
         width: width,
         height: height,
@@ -694,6 +744,7 @@ class ProductViewState extends State<ProductView> {
         ),
       );
     }
+    // Пустой контейнер с иконкой
     return Container(
       width: width,
       height: height,
@@ -705,8 +756,7 @@ class ProductViewState extends State<ProductView> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBody(BuildContext context) {
     final displayedProducts = _products.where((p) {
       final matchesCategory = _selectedCategoryIds.isEmpty
           ? true
@@ -717,6 +767,97 @@ class ProductViewState extends State<ProductView> {
       return matchesCategory && matchesSearch;
     }).toList();
 
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (displayedProducts.isEmpty) {
+      return Center(
+        child: RefreshIndicator(
+          onRefresh: _loadProducts,
+          child: ListView(
+            // Чтобы RefreshIndicator корректно срабатывал, нужен ListView
+            children: const [
+              SizedBox(height: 350),
+              Center(
+                child: Text('Нет продуктов. Добавьте новый продукт.'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Список продуктов
+    return RefreshIndicator(
+      onRefresh: _loadProducts,
+      child: ListView.builder(
+        itemCount: displayedProducts.length,
+        itemBuilder: (context, index) {
+          final product = displayedProducts[index];
+          return _buildProductCard(product);
+        },
+      ),
+    );
+  }
+
+  Widget _buildProductCard(Product product) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(8.0),
+          child: CachedNetworkImage(
+            imageUrl: AppConstants.apiBaseUrl + product.productImage,
+            httpHeaders: _token != null ? {"Authorization": "Bearer $_token"} : {},
+            width: 60,
+            height: 60,
+            fit: BoxFit.cover,
+          ),
+        ),
+        title: Text(
+          product.productName,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 10.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.document_scanner, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    product.productBarcode,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  const Icon(Icons.category, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    product.productCategory.categoryName,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        onTap: () => _showProductDetails(product),
+      ),
+    );
+  }
+
+  // -------------------------------------------------------
+  // Построение виджета
+  // -------------------------------------------------------
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: _isSearching
@@ -757,66 +898,7 @@ class ProductViewState extends State<ProductView> {
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 800),
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : RefreshIndicator(
-                onRefresh: _loadProducts,
-                child: ListView.builder(
-                  itemCount: displayedProducts.length,
-                  itemBuilder: (context, index) {
-                    final product = displayedProducts[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
-                        leading: ClipRRect(
-                          borderRadius: BorderRadius.circular(8.0),
-                          child: CachedNetworkImage(
-                            imageUrl: AppConstants.apiBaseUrl + product.productImage,
-                            httpHeaders: _token != null ? {"Authorization": "Bearer $_token"} : {},
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        title: Text(
-                          product.productName,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 10.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.document_scanner, size: 16),
-                                  const SizedBox(width: 1),
-                                  Text(
-                                    product.productBarcode,
-                                    style: const TextStyle(fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  const Icon(Icons.category, size: 16),
-                                  const SizedBox(width: 1),
-                                  Text(
-                                    product.productCategory.categoryName,
-                                    style: const TextStyle(fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        onTap: () => _showProductDetails(product),
-                      ),
-                    );
-                  },
-                ),
-              ),
+              child: _buildBody(context),
             ),
           );
         },

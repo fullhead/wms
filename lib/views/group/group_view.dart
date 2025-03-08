@@ -11,11 +11,17 @@ class GroupView extends StatefulWidget {
 }
 
 class GroupViewState extends State<GroupView> {
+  // -------------------------------------------------------
+  // Поля
+  // -------------------------------------------------------
   late final GroupPresenter _presenter;
   List<Group> _groups = [];
   bool _isLoading = false;
   String? _errorMessage;
 
+  // -------------------------------------------------------
+  // Методы жизненного цикла
+  // -------------------------------------------------------
   @override
   void initState() {
     super.initState();
@@ -41,16 +47,18 @@ class GroupViewState extends State<GroupView> {
       });
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
 
+  // -------------------------------------------------------
+  // Диалоги создания/редактирования
+  // -------------------------------------------------------
   Future<void> _showGroupDialog({Group? group}) async {
     final nameController = TextEditingController(text: group?.groupName ?? '');
-    final levelController = TextEditingController(text: group?.groupAccessLevel ?? '1');
+    final levelController =
+    TextEditingController(text: group?.groupAccessLevel ?? '1');
     bool status = group?.groupStatus ?? true;
 
     await showDialog(
@@ -59,8 +67,12 @@ class GroupViewState extends State<GroupView> {
         return StatefulBuilder(
           builder: (dialogContext, setStateDialog) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: Text(group == null ? 'Добавить группу' : 'Редактировать группу'),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Text(
+                group == null ? 'Добавить группу' : 'Редактировать группу',
+              ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -111,12 +123,14 @@ class GroupViewState extends State<GroupView> {
                     try {
                       String responseMessage;
                       if (group == null) {
+                        // Создание группы
                         responseMessage = await _presenter.createGroup(
                           groupName: name,
                           groupAccessLevel: level,
                           groupStatus: status,
                         );
                       } else {
+                        // Редактирование группы
                         responseMessage = await _presenter.updateGroup(
                           group,
                           name: name,
@@ -124,9 +138,11 @@ class GroupViewState extends State<GroupView> {
                           status: status,
                         );
                       }
+
                       if (!dialogContext.mounted) return;
                       Navigator.pop(dialogContext);
                       await _loadGroups();
+
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -152,14 +168,21 @@ class GroupViewState extends State<GroupView> {
     );
   }
 
+  // -------------------------------------------------------
+  // Диалог удаления
+  // -------------------------------------------------------
   Future<void> _confirmDelete(Group group) async {
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (alertContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Text('Подтверждение'),
-          content: Text('Вы уверены, что хотите удалить группу "${group.groupName}"?'),
+          content: Text(
+            'Вы уверены, что хотите удалить группу "${group.groupName}"?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(alertContext, false),
@@ -175,7 +198,7 @@ class GroupViewState extends State<GroupView> {
     );
     if (confirmed == true) {
       try {
-        String responseMessage = await _presenter.deleteGroup(group);
+        final responseMessage = await _presenter.deleteGroup(group);
         await _loadGroups();
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -193,6 +216,9 @@ class GroupViewState extends State<GroupView> {
     }
   }
 
+  // -------------------------------------------------------
+  // Вспомогательные методы отображения
+  // -------------------------------------------------------
   Widget _buildStatusChip(Group group) {
     final isActive = group.groupStatus;
     final text = isActive ? 'Активна' : 'Заблокирована';
@@ -237,16 +263,15 @@ class GroupViewState extends State<GroupView> {
               ],
             ),
             const SizedBox(height: 12),
-            // Вторая строка: статус и уровень доступа
+            // Вторая строка: дата создания и уровень доступа
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Дата создание: ${group.groupCreationDate.toLocal().toString().split('.')[0]}",
+                  "Дата создания: ${group.groupCreationDate.toLocal().toString().split('.')[0]}",
                   style: const TextStyle(fontSize: 13),
                   overflow: TextOverflow.ellipsis,
                 ),
-
                 Text(
                   "Уровень: ${group.groupAccessLevel}",
                   style: const TextStyle(fontSize: 12),
@@ -254,7 +279,7 @@ class GroupViewState extends State<GroupView> {
               ],
             ),
             const SizedBox(height: 4),
-            // Третья строка: дата создания и кнопки действий
+            // Третья строка: статус и кнопки действий
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -285,7 +310,7 @@ class GroupViewState extends State<GroupView> {
                   ],
                 )
               ],
-            )
+            ),
           ],
         ),
       ),
@@ -308,6 +333,19 @@ class GroupViewState extends State<GroupView> {
     );
   }
 
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_errorMessage != null) {
+      return Center(child: Text(_errorMessage!));
+    }
+    return _buildGroupList();
+  }
+
+  // -------------------------------------------------------
+  // Основной build
+  // -------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -323,11 +361,7 @@ class GroupViewState extends State<GroupView> {
               constraints: const BoxConstraints(maxWidth: 800),
               child: RefreshIndicator(
                 onRefresh: _loadGroups,
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _errorMessage != null
-                    ? Center(child: Text(_errorMessage!))
-                    : _buildGroupList(),
+                child: _buildBody(),
               ),
             ),
           );

@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Добавляем разрешение на доступ к интернету -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="wms"
         android:name="${applicationName}"

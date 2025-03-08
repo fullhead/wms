@@ -10,9 +10,7 @@ class UserPresenter {
   final UserRepository _userRepository;
 
   UserPresenter({UserRepository? userRepository})
-      : _userRepository = userRepository ??
-            UserRepository(baseUrl: AppConstants.apiBaseUrl,
-            );
+      : _userRepository = userRepository ?? UserRepository(baseUrl: AppConstants.apiBaseUrl);
 
   /// Геттер для доступа к UserAPIService.
   UserAPIService get userApiService => _userRepository.userAPIService;
@@ -25,7 +23,7 @@ class UserPresenter {
     return await _userRepository.getAllUsers();
   }
 
-  /// Создаёт нового пользователя.
+  /// Создает нового пользователя.
   Future<String> createUser({
     required String fullName,
     required String username,
@@ -50,14 +48,14 @@ class UserPresenter {
 
   /// Обновляет данные пользователя.
   Future<String> updateUser(
-    User user, {
-    String? fullName,
-    String? username,
-    String? avatar,
-    bool? status,
-    String? password,
-    Group? group,
-  }) async {
+      User user, {
+        String? fullName,
+        String? username,
+        String? avatar,
+        bool? status,
+        String? password,
+        Group? group,
+      }) async {
     if (fullName != null) user.userFullname = fullName;
     if (username != null) user.userName = username;
     if (avatar != null) user.userAvatar = avatar;
@@ -74,5 +72,25 @@ class UserPresenter {
   /// Удаляет пользователя.
   Future<String> deleteUser(User user) async {
     return await _userRepository.deleteUser(user.userID);
+  }
+
+  /// Новый метод: Устанавливает новый аватар для пользователя.
+  Future<String> setUserAvatar(int userId, String imagePath) async {
+    return await _userRepository.setUserAvatar(userId, imagePath);
+  }
+
+  /// Новый метод: Получает URL аватара пользователя.
+  Future<String> getUserAvatar(int userId) async {
+    return await _userRepository.getUserAvatar(userId);
+  }
+
+  /// Новый метод: Удаляет аватар пользователя.
+  Future<String> deleteUserAvatar(int userId) async {
+    return await _userRepository.deleteUserAvatar(userId);
+  }
+
+  /// Обновляет токен пользователя.
+  Future<String> refreshToken() async {
+    return await _userRepository.refreshToken();
   }
 }
