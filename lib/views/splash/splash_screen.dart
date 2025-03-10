@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:wms/core/routes.dart';
-import 'package:wms/services/auth_storage.dart';
+import 'package:wms/core/session/auth_storage.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -31,7 +31,8 @@ class SplashScreenState extends State<SplashScreen> {
   // -------------------------------------------------------
   Future<void> _initSplash() async {
     try {
-      final token = await AuthStorage.getToken();
+      // Используем getAccessToken() вместо getToken()
+      final token = await AuthStorage.getAccessToken();
       final destinationRoute = (token != null && token.isNotEmpty)
           ? AppRoutes.dashboard
           : AppRoutes.authorization;

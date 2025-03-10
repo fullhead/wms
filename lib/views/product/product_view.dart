@@ -7,7 +7,7 @@ import 'package:wms/core/constants.dart';
 import 'package:wms/models/category.dart';
 import 'package:wms/models/product.dart';
 import 'package:wms/presenters/product/product_presenter.dart';
-import 'package:wms/services/auth_storage.dart';
+import 'package:wms/core/session/auth_storage.dart';
 import 'package:wms/widgets/wms_drawer.dart';
 
 class ProductView extends StatefulWidget {
@@ -42,7 +42,8 @@ class ProductViewState extends State<ProductView> {
   }
 
   Future<void> _loadToken() async {
-    _token = await AuthStorage.getToken();
+    // Используем getAccessToken() вместо getToken()
+    _token = await AuthStorage.getAccessToken();
     if (mounted) setState(() {});
   }
 
@@ -85,7 +86,7 @@ class ProductViewState extends State<ProductView> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library),
+              leading: Icon(Icons.photo_library, color: Theme.of(context).colorScheme.primary),
               title: const Text('Выбрать из галереи'),
               onTap: () async {
                 final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
@@ -94,7 +95,7 @@ class ProductViewState extends State<ProductView> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_camera),
+              leading: Icon(Icons.photo_camera, color: Theme.of(context).colorScheme.primary),
               title: const Text('Сделать фото'),
               onTap: () async {
                 final pickedFile = await _picker.pickImage(source: ImageSource.camera);
@@ -117,9 +118,7 @@ class ProductViewState extends State<ProductView> {
     }
   }
 
-  // -------------------------------------------------------
   // Методы поиска и фильтрации
-  // -------------------------------------------------------
   void _searchStub() {
     setState(() => _isSearching = true);
   }
@@ -190,6 +189,7 @@ class ProductViewState extends State<ProductView> {
   // Методы отображения продукта (детали, редактирование, создание, удаление)
   // -------------------------------------------------------
   void _showProductDetails(Product product) {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -199,7 +199,6 @@ class ProductViewState extends State<ProductView> {
         final dialogWidth = isDesktop ? size.width * 0.5 : size.width * 0.9;
         final dialogHeight = isDesktop ? size.height * 0.6 : size.height * 0.46;
         final imageSize = isDesktop ? 750.0 : 300.0;
-
         return AlertDialog(
           insetPadding: EdgeInsets.zero,
           contentPadding: const EdgeInsets.all(10),
@@ -211,7 +210,7 @@ class ProductViewState extends State<ProductView> {
                   padding: const EdgeInsets.only(left: 16.0),
                   child: Text(
                     product.productName,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -244,10 +243,10 @@ class ProductViewState extends State<ProductView> {
                           Navigator.of(ctx).pop();
                           _showEditProductDialog(product);
                         },
-                        icon: const Icon(Icons.edit, color: Colors.blue),
-                        label: const Text(
+                        icon: Icon(Icons.edit, color: theme.colorScheme.secondary),
+                        label: Text(
                           "Редактировать",
-                          style: TextStyle(color: Colors.blue),
+                          style: TextStyle(color: theme.colorScheme.secondary),
                         ),
                       ),
                       TextButton.icon(
@@ -255,10 +254,10 @@ class ProductViewState extends State<ProductView> {
                           Navigator.of(ctx).pop();
                           _confirmDeleteProduct(product);
                         },
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        label: const Text(
+                        icon: Icon(Icons.delete, color: theme.colorScheme.error),
+                        label: Text(
                           "Удалить",
-                          style: TextStyle(color: Colors.red),
+                          style: TextStyle(color: theme.colorScheme.error),
                         ),
                       ),
                     ],
@@ -282,7 +281,6 @@ class ProductViewState extends State<ProductView> {
     File? editedImage;
     List<Category> allCategories = [];
 
-    // Загрузка категорий
     try {
       allCategories = await _loadCategoriesForProduct();
       final foundIndex = allCategories.indexWhere(
@@ -305,10 +303,10 @@ class ProductViewState extends State<ProductView> {
     }
     if (!mounted) return;
 
-    // Построение диалога
     showDialog(
       context: context,
       builder: (inDialogContext) {
+        final theme = Theme.of(inDialogContext);
         final size = MediaQuery.of(inDialogContext).size;
         final isDesktop = size.width > 800;
         final dialogWidth = isDesktop ? size.width * 0.5 : size.width * 0.95;
@@ -318,7 +316,10 @@ class ProductViewState extends State<ProductView> {
         return AlertDialog(
           insetPadding: EdgeInsets.zero,
           contentPadding: const EdgeInsets.all(10),
-          title: const Text("Редактировать продукт"),
+          title: Text(
+            "Редактировать продукт",
+            style: theme.textTheme.titleMedium,
+          ),
           content: SizedBox(
             width: dialogWidth,
             height: dialogHeight,
@@ -330,7 +331,6 @@ class ProductViewState extends State<ProductView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Изображение продукта
                         GestureDetector(
                           onTap: () async {
                             final result = await _showImageSourceSelectionDialog(inDialogContext);
@@ -359,12 +359,10 @@ class ProductViewState extends State<ProductView> {
                           child: const Text("Изменить изображение"),
                         ),
                         const SizedBox(height: 20),
-                        // Поля ввода
                         TextFormField(
                           initialValue: editedName,
                           decoration: const InputDecoration(labelText: "Название продукта"),
-                          validator: (value) =>
-                          (value == null || value.isEmpty) ? "Введите название" : null,
+                          validator: (value) => (value == null || value.isEmpty) ? "Введите название" : null,
                           onSaved: (value) => editedName = value!,
                         ),
                         const SizedBox(height: 10),
@@ -373,7 +371,7 @@ class ProductViewState extends State<ProductView> {
                           decoration: InputDecoration(
                             labelText: "Штрихкод",
                             suffixIcon: IconButton(
-                              icon: const Icon(Icons.document_scanner),
+                              icon: const Icon(Icons.document_scanner, color: Colors.deepOrange),
                               onPressed: () async {
                                 final scannedCode = await _scanBarcode();
                                 setStateDialog(() {
@@ -382,12 +380,10 @@ class ProductViewState extends State<ProductView> {
                               },
                             ),
                           ),
-                          validator: (value) =>
-                          (value == null || value.isEmpty) ? "Введите штрихкод" : null,
+                          validator: (value) => (value == null || value.isEmpty) ? "Введите штрихкод" : null,
                           onSaved: (value) => editedBarcode = value!,
                         ),
                         const SizedBox(height: 10),
-                        // Выбор категории
                         DropdownButtonFormField<Category>(
                           decoration: const InputDecoration(labelText: "Категория"),
                           value: editedCategory,
@@ -423,18 +419,14 @@ class ProductViewState extends State<ProductView> {
                   try {
                     String imagePath = product.productImage;
                     if (editedImage != null) {
-                      imagePath = await _presenter.productApiService.uploadProductImage(
-                        editedImage!.path,
-                      );
+                      imagePath = await _presenter.productApiService.uploadProductImage(editedImage!.path);
                     }
-                    // Обновляем поля продукта
                     product.productName = editedName;
                     product.productBarcode = editedBarcode;
                     product.productImage = imagePath;
                     if (editedCategory != null) {
                       product.productCategory = editedCategory!;
                     }
-                    // Сохраняем
                     final responseMessage = await _presenter.updateProduct(product);
                     if (inDialogContext.mounted) {
                       Navigator.of(inDialogContext).pop();
@@ -479,7 +471,6 @@ class ProductViewState extends State<ProductView> {
     File? newImage;
     List<Category> allCategories = [];
 
-    // Загрузка категорий
     try {
       allCategories = await _loadCategoriesForProduct();
       if (allCategories.isNotEmpty) {
@@ -497,19 +488,21 @@ class ProductViewState extends State<ProductView> {
     }
     if (!mounted) return;
 
-    // Построение диалога
     showDialog(
       context: context,
       builder: (inDialogContext) {
+        final theme = Theme.of(inDialogContext);
         final size = MediaQuery.of(inDialogContext).size;
         final isDesktop = size.width > 800;
         final dialogWidth = isDesktop ? size.width * 0.5 : size.width * 0.95;
         final dialogHeight = isDesktop ? size.height * 0.6 : size.height * 0.7;
-
         return AlertDialog(
           insetPadding: const EdgeInsets.all(10),
           contentPadding: const EdgeInsets.all(10),
-          title: const Text("Создать продукт"),
+          title: Text(
+            "Создать продукт",
+            style: theme.textTheme.titleMedium,
+          ),
           content: SizedBox(
             width: dialogWidth,
             height: dialogHeight,
@@ -521,7 +514,6 @@ class ProductViewState extends State<ProductView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Изображение продукта
                         GestureDetector(
                           onTap: () async {
                             final result = await _showImageSourceSelectionDialog(inDialogContext);
@@ -550,12 +542,9 @@ class ProductViewState extends State<ProductView> {
                           child: const Text("Выбрать изображение"),
                         ),
                         const SizedBox(height: 20),
-
-                        // Поля ввода
                         TextFormField(
                           decoration: const InputDecoration(labelText: "Название продукта"),
-                          validator: (value) =>
-                          (value == null || value.isEmpty) ? "Введите название" : null,
+                          validator: (value) => (value == null || value.isEmpty) ? "Введите название" : null,
                           onSaved: (value) => newName = value!,
                         ),
                         const SizedBox(height: 10),
@@ -564,7 +553,7 @@ class ProductViewState extends State<ProductView> {
                           decoration: InputDecoration(
                             labelText: "Штрихкод",
                             suffixIcon: IconButton(
-                              icon: const Icon(Icons.document_scanner),
+                              icon: const Icon(Icons.document_scanner, color: Colors.deepOrange),
                               onPressed: () async {
                                 final scannedCode = await _scanBarcode();
                                 setStateDialog(() {
@@ -573,11 +562,9 @@ class ProductViewState extends State<ProductView> {
                               },
                             ),
                           ),
-                          validator: (value) =>
-                          (value == null || value.isEmpty) ? "Введите штрихкод" : null,
+                          validator: (value) => (value == null || value.isEmpty) ? "Введите штрихкод" : null,
                         ),
                         const SizedBox(height: 10),
-                        // Выбор категории
                         DropdownButtonFormField<Category>(
                           decoration: const InputDecoration(labelText: "Категория"),
                           value: newCategory,
@@ -701,7 +688,7 @@ class ProductViewState extends State<ProductView> {
   }
 
   // -------------------------------------------------------
-  // Построение интерфейса
+  // Построение виджета для отображения изображения в диалоге
   // -------------------------------------------------------
   Widget _buildDialogImage({
     File? fileImage,
@@ -711,7 +698,7 @@ class ProductViewState extends State<ProductView> {
     double width = 250,
     double height = 250,
   }) {
-    // Если выбрано локальное изображение
+    final theme = Theme.of(context);
     if (fileImage != null) {
       return Container(
         width: width,
@@ -721,13 +708,11 @@ class ProductViewState extends State<ProductView> {
             image: FileImage(fileImage),
             fit: BoxFit.cover,
           ),
-          color: Colors.grey[300],
+          color: theme.dividerColor,
           borderRadius: BorderRadius.circular(4),
         ),
       );
-    }
-    // Если есть ссылка на изображение
-    else if (imageUrl != null && imageUrl.isNotEmpty) {
+    } else if (imageUrl != null && imageUrl.isNotEmpty) {
       return Container(
         width: width,
         height: height,
@@ -739,23 +724,56 @@ class ProductViewState extends State<ProductView> {
             ),
             fit: BoxFit.cover,
           ),
-          color: Colors.grey[300],
+          color: theme.dividerColor,
           borderRadius: BorderRadius.circular(4),
         ),
       );
     }
-    // Пустой контейнер с иконкой
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: Colors.grey[300],
+        color: theme.dividerColor,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: showPlaceholder ? const Icon(Icons.image, size: 50) : null,
+      child: showPlaceholder ? const Icon(Icons.image, color: Colors.deepOrange, size: 50) : null,
     );
   }
 
+  // -------------------------------------------------------
+  // Построение Skeleton-карточки для продукции
+  // -------------------------------------------------------
+  Widget _buildSkeletonCard() {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+        leading: Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(8.0),
+          ),
+        ),
+        title: Container(
+          width: double.infinity,
+          height: 16,
+          color: Colors.grey.shade300,
+        ),
+        subtitle: Container(
+          margin: const EdgeInsets.only(top: 10),
+          width: double.infinity,
+          height: 14,
+          color: Colors.grey.shade300,
+        ),
+      ),
+    );
+  }
+
+  // -------------------------------------------------------
+  // Построение основного интерфейса
+  // -------------------------------------------------------
   Widget _buildBody(BuildContext context) {
     final displayedProducts = _products.where((p) {
       final matchesCategory = _selectedCategoryIds.isEmpty
@@ -768,27 +786,28 @@ class ProductViewState extends State<ProductView> {
     }).toList();
 
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return ListView.builder(
+        padding: const EdgeInsets.only(bottom: 80),
+        itemCount: 10,
+        itemBuilder: (context, index) => _buildSkeletonCard(),
+      );
     }
 
     if (displayedProducts.isEmpty) {
       return Center(
         child: RefreshIndicator(
           onRefresh: _loadProducts,
+          color: Theme.of(context).colorScheme.primary,
           child: ListView(
-            // Чтобы RefreshIndicator корректно срабатывал, нужен ListView
             children: const [
-              SizedBox(height: 350),
-              Center(
-                child: Text('Нет продуктов. Добавьте новый продукт.'),
-              ),
+              SizedBox(height: 400),
+              Center(child: Text('Нет продукции. Добавьте новую продукцию.')),
             ],
           ),
         ),
       );
     }
 
-    // Список продуктов
     return RefreshIndicator(
       onRefresh: _loadProducts,
       child: ListView.builder(
@@ -801,7 +820,11 @@ class ProductViewState extends State<ProductView> {
     );
   }
 
+  // -------------------------------------------------------
+  // Построение карточки продукта
+  // -------------------------------------------------------
   Widget _buildProductCard(Product product) {
+    final theme = Theme.of(context);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       child: ListTile(
@@ -818,7 +841,7 @@ class ProductViewState extends State<ProductView> {
         ),
         title: Text(
           product.productName,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 10.0),
@@ -827,21 +850,21 @@ class ProductViewState extends State<ProductView> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.document_scanner, size: 16),
+                  const Icon(Icons.document_scanner, color: Colors.deepOrange, size: 16),
                   const SizedBox(width: 4),
                   Text(
                     product.productBarcode,
-                    style: const TextStyle(fontSize: 12),
+                    style: theme.textTheme.bodySmall?.copyWith(fontSize: 12),
                   ),
                 ],
               ),
               Row(
                 children: [
-                  const Icon(Icons.category, size: 16),
+                  const Icon(Icons.category, color: Colors.deepOrange, size: 16),
                   const SizedBox(width: 4),
                   Text(
                     product.productCategory.categoryName,
-                    style: const TextStyle(fontSize: 12),
+                    style: theme.textTheme.bodySmall?.copyWith(fontSize: 12),
                   ),
                 ],
               ),
@@ -854,10 +877,11 @@ class ProductViewState extends State<ProductView> {
   }
 
   // -------------------------------------------------------
-  // Построение виджета
+  // Основной build метода
   // -------------------------------------------------------
   @override
   Widget build(BuildContext context) {
+    Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: _isSearching
@@ -873,21 +897,21 @@ class ProductViewState extends State<ProductView> {
             });
           },
         )
-            : const Text("Продукция"),
+            : const Text("Продукция", style: TextStyle(color: Colors.deepOrange)),
         actions: _isSearching
             ? [
           IconButton(
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close, color: Colors.deepOrange,),
             onPressed: _stopSearch,
           ),
         ]
             : [
           IconButton(
-            icon: const Icon(Icons.search),
+            icon: const Icon(Icons.search, color: Colors.deepOrange,),
             onPressed: _searchStub,
           ),
           IconButton(
-            icon: const Icon(Icons.filter_list),
+            icon: const Icon(Icons.filter_list, color: Colors.deepOrange,),
             onPressed: _showFilterDialog,
           ),
         ],

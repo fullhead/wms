@@ -8,7 +8,7 @@ class CellPresenter {
 
   CellPresenter({CellRepository? cellRepository})
       : _cellRepository =
-            cellRepository ?? CellRepository(baseUrl: AppConstants.apiBaseUrl);
+      cellRepository ?? CellRepository(baseUrl: AppConstants.apiBaseUrl);
 
   /// Получает список всех ячеек.
   Future<List<Cell>> fetchAllCells() async {

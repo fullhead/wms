@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wms/presenters/auth/authorization_presenter.dart';
 import 'package:wms/core/routes.dart';
+import 'package:wms/core/utils.dart';
 
 class AuthorizationView extends StatefulWidget {
   const AuthorizationView({super.key});
@@ -13,12 +14,17 @@ class _AuthorizationViewState extends State<AuthorizationView> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // Если AuthorizationPresenter внутри себя использует singleton UserAPIService,
   final _presenter = AuthorizationPresenter();
 
   String? _errorMessage;
   bool _isLoading = false;
 
   Future<void> _login() async {
+    // Убираем фокус при клике на кнопку "Войти"
+    FocusScope.of(context).unfocus();
+
     if (_formKey.currentState?.validate() ?? false) {
       setState(() {
         _errorMessage = null;
@@ -33,10 +39,18 @@ class _AuthorizationViewState extends State<AuthorizationView> {
 
         if (!mounted) return;
         Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+
       } catch (error) {
-        setState(() => _errorMessage = error.toString());
+        // Обрабатываем возможные варианты: ApiException или «просто строку»
+        if (error is ApiException) {
+          setState(() => _errorMessage = error.message);
+        } else {
+          setState(() => _errorMessage = error.toString());
+        }
       } finally {
-        setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     }
   }
@@ -50,7 +64,7 @@ class _AuthorizationViewState extends State<AuthorizationView> {
 
   @override
   Widget build(BuildContext context) {
-    // Используем LayoutBuilder для адаптивного расчета отступов и ограничений ширины
+    // Используем LayoutBuilder для адаптивного расчёта отступов
     return Scaffold(
       appBar: AppBar(
         title: const Text('WMS - система'),
@@ -62,6 +76,7 @@ class _AuthorizationViewState extends State<AuthorizationView> {
           constraints.maxWidth < 600 ? 24.0 : constraints.maxWidth * 0.2;
           final topPadding =
           constraints.maxWidth < 600 ? 120.0 : constraints.maxWidth * 0.1;
+
           return SingleChildScrollView(
             padding: EdgeInsets.only(
               top: topPadding,
@@ -81,9 +96,13 @@ class _AuthorizationViewState extends State<AuthorizationView> {
                         'Авторизоваться',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 24),
+
+                      // Отображение ошибки
                       if (_errorMessage != null)
                         Container(
                           margin: const EdgeInsets.only(bottom: 16),
@@ -100,12 +119,16 @@ class _AuthorizationViewState extends State<AuthorizationView> {
                                 child: Text(
                                   _errorMessage!,
                                   style: const TextStyle(
-                                      color: Colors.red, fontSize: 14),
+                                    color: Colors.red,
+                                    fontSize: 14,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
+
+                      // Поле логина
                       TextFormField(
                         controller: _usernameController,
                         decoration: const InputDecoration(
@@ -120,6 +143,8 @@ class _AuthorizationViewState extends State<AuthorizationView> {
                         },
                       ),
                       const SizedBox(height: 16),
+
+                      // Поле пароля
                       TextFormField(
                         controller: _passwordController,
                         decoration: const InputDecoration(
@@ -135,6 +160,8 @@ class _AuthorizationViewState extends State<AuthorizationView> {
                         },
                       ),
                       const SizedBox(height: 24),
+
+                      // Кнопка входа или индикатор загрузки
                       _isLoading
                           ? const Center(child: CircularProgressIndicator())
                           : SizedBox(
@@ -142,8 +169,7 @@ class _AuthorizationViewState extends State<AuthorizationView> {
                         child: ElevatedButton(
                           onPressed: _login,
                           style: ElevatedButton.styleFrom(
-                            padding:
-                            const EdgeInsets.symmetric(vertical: 14),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: const Text(
                             'Войти',

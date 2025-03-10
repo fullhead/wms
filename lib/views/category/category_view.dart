@@ -53,39 +53,50 @@ class CategoryViewState extends State<CategoryView> {
   }
 
   // -------------------------------------------------------
-  // Методы для создания/редактирования категории
+  // Диалоги создания/редактирования категории
   // -------------------------------------------------------
   Future<void> _showCategoryDialog({Category? category}) async {
+    final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(
       text: category?.categoryName ?? '',
     );
-
     await showDialog(
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (dialogContext, setStateDialog) {
+            final theme = Theme.of(dialogContext);
             return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
               title: Text(
                 category == null ? 'Добавить категорию' : 'Редактировать категорию',
+                style: theme.textTheme.titleMedium,
               ),
               content: SingleChildScrollView(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 400),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Название',
-                          border: OutlineInputBorder(),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(
+                          controller: nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Название',
+                            // Глобальная тема InputDecorationTheme обеспечит видимый контур
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Введите название категории';
+                            }
+                            return null;
+                          },
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -96,13 +107,8 @@ class CategoryViewState extends State<CategoryView> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
+                    if (!formKey.currentState!.validate()) return;
                     final name = nameController.text.trim();
-                    if (name.isEmpty) {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        const SnackBar(content: Text('Название обязательно')),
-                      );
-                      return;
-                    }
                     try {
                       String responseMessage;
                       if (category == null) {
@@ -144,19 +150,21 @@ class CategoryViewState extends State<CategoryView> {
   }
 
   // -------------------------------------------------------
-  // Методы для удаления категории
+  // Диалог удаления категории
   // -------------------------------------------------------
   Future<void> _confirmDelete(Category category) async {
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (alertContext) {
+        final theme = Theme.of(alertContext);
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text('Подтверждение'),
+          title: Text('Подтверждение', style: theme.textTheme.titleMedium),
           content: Text(
             'Вы уверены, что хотите удалить категорию "${category.categoryName}"?',
+            style: theme.textTheme.bodyMedium,
           ),
           actions: [
             TextButton(
@@ -192,9 +200,10 @@ class CategoryViewState extends State<CategoryView> {
   }
 
   // -------------------------------------------------------
-  // Вспомогательные методы отрисовки
+  // Методы отрисовки
   // -------------------------------------------------------
   Widget _buildCategoryCard(Category category) {
+    final theme = Theme.of(context);
     return Card(
       elevation: 4,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -203,7 +212,10 @@ class CategoryViewState extends State<CategoryView> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         title: Text(
           category.categoryName,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -214,7 +226,7 @@ class CategoryViewState extends State<CategoryView> {
                 padding: EdgeInsets.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              icon: const Icon(Icons.edit, color: Colors.blue),
+              icon: Icon(Icons.edit, color: theme.colorScheme.primary),
               onPressed: () => _showCategoryDialog(category: category),
             ),
             const SizedBox(width: 16),
@@ -224,8 +236,41 @@ class CategoryViewState extends State<CategoryView> {
                 padding: EdgeInsets.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon: Icon(Icons.delete, color: theme.colorScheme.error, size: 24),
               onPressed: () => _confirmDelete(category),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonCard() {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        title: Container(
+          width: double.infinity,
+          height: 16,
+          color: theme.dividerColor,
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              color: theme.dividerColor,
+            ),
+            const SizedBox(width: 16),
+            Container(
+              width: 24,
+              height: 24,
+              color: theme.dividerColor,
             ),
           ],
         ),
@@ -235,9 +280,16 @@ class CategoryViewState extends State<CategoryView> {
 
   Widget _buildCategoryList() {
     if (_categories.isEmpty) {
-      // Плашка, если нет категорий
-      return const Center(
-        child: Text('Нет категорий. Добавьте новую категорию.'),
+      return Center(
+        child: RefreshIndicator(
+          onRefresh: _loadCategories,
+          child: ListView(
+            children: const [
+              SizedBox(height: 400),
+              Center(child: Text('Нет категорий. Добавьте новую категорию.')),
+            ],
+          ),
+        ),
       );
     }
     return ListView.builder(
@@ -251,15 +303,16 @@ class CategoryViewState extends State<CategoryView> {
   }
 
   Widget _buildBody() {
-    // Если идёт загрузка
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return ListView.builder(
+        padding: const EdgeInsets.only(bottom: 80),
+        itemCount: 12,
+        itemBuilder: (context, index) => _buildSkeletonCard(),
+      );
     }
-    // Если есть ошибка
     if (_errorMessage != null) {
       return Center(child: Text(_errorMessage!));
     }
-    // Иначе рендерим список (возможен пустой или нет)
     return _buildCategoryList();
   }
 
@@ -270,7 +323,7 @@ class CategoryViewState extends State<CategoryView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Категории'),
+        title: const Text('Категории', style: TextStyle(color: Colors.deepOrange)),
       ),
       drawer: const WmsDrawer(),
       body: LayoutBuilder(

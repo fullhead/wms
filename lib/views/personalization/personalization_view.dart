@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:wms/core/constants.dart';
 import 'package:wms/models/user.dart';
 import 'package:wms/presenters/personalization/personalization_presenter.dart';
-import 'package:wms/services/auth_storage.dart';
+import 'package:wms/core/session/auth_storage.dart';
 import 'package:wms/widgets/wms_drawer.dart';
 
 class PersonalizationView extends StatefulWidget {
@@ -29,7 +29,7 @@ class PersonalizationViewState extends State<PersonalizationView> {
   User? _currentUser;
   bool _isLoading = false;
   File? _newAvatarImage;
-  String? _token;
+  String? _token; // access token
 
   // -------------------------------------------------------
   // Жизненный цикл
@@ -39,8 +39,6 @@ class PersonalizationViewState extends State<PersonalizationView> {
     super.initState();
     _loadToken();
     _loadCurrentUser();
-    // Подписываемся на изменения в полях, чтобы кнопка "Сохранить изменения"
-    // реагировала на них (активировалась / деактивировалась)
     _loginController.addListener(() => setState(() {}));
     _passwordController.addListener(() => setState(() {}));
   }
@@ -53,10 +51,10 @@ class PersonalizationViewState extends State<PersonalizationView> {
   }
 
   // -------------------------------------------------------
-  // Загрузка текущего пользователя, токена и сохранение изменений
+  // Загрузка текущего пользователя и токена
   // -------------------------------------------------------
   Future<void> _loadToken() async {
-    _token = await AuthStorage.getToken();
+    _token = await AuthStorage.getAccessToken();
     if (mounted) setState(() {});
   }
 
@@ -87,7 +85,6 @@ class PersonalizationViewState extends State<PersonalizationView> {
         _loginController.text.trim() != _currentUser!.userName;
     final bool isPasswordChanged = _passwordController.text.trim().isNotEmpty;
 
-    // Если не было изменений
     if (!isAvatarChanged && !isLoginChanged && !isPasswordChanged) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Нечего обновлять")),
@@ -111,9 +108,7 @@ class PersonalizationViewState extends State<PersonalizationView> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Изменения успешно сохранены")),
         );
-        // Обновляем информацию о пользователе
         await _loadCurrentUser();
-        // Очищаем пароль и сбрасываем временный аватар
         _passwordController.clear();
         setState(() {
           _newAvatarImage = null;
@@ -154,7 +149,7 @@ class PersonalizationViewState extends State<PersonalizationView> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.photo_library),
+                leading: const Icon(Icons.photo_library, color: Colors.deepOrange),
                 title: const Text('Выбрать из галереи'),
                 onTap: () async {
                   final image = await _pickImage(ImageSource.gallery);
@@ -162,7 +157,7 @@ class PersonalizationViewState extends State<PersonalizationView> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_camera),
+                leading: const Icon(Icons.photo_camera, color: Colors.deepOrange),
                 title: const Text('Сделать фото'),
                 onTap: () async {
                   final image = await _pickImage(ImageSource.camera);
@@ -184,13 +179,12 @@ class PersonalizationViewState extends State<PersonalizationView> {
   // -------------------------------------------------------
   Widget _buildBody(BoxConstraints constraints) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return _buildSkeleton();
     }
     if (_currentUser == null) {
       return const Center(child: Text('Профиль не найден'));
     }
 
-    // Настраиваем размеры для разных экранов
     final bool isWide = constraints.maxWidth > 800;
     final double avatarRadius = isWide ? 160 : 60;
     final double fieldMaxWidth = isWide ? 600 : double.infinity;
@@ -223,10 +217,51 @@ class PersonalizationViewState extends State<PersonalizationView> {
     );
   }
 
+  Widget _buildSkeleton() {
+    // Скелетон для аватара и полей
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 60,
+            backgroundColor: Colors.grey.shade300,
+          ),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            height: 56,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            height: 56,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            width: double.infinity,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAvatar(double radius) {
     final avatarUrl = _currentUser?.userAvatar;
-    final defaultAvatarUrl =
-        '${AppConstants.apiBaseUrl}/assets/user/no_image_user.png';
+    final defaultAvatarUrl = '${AppConstants.apiBaseUrl}/assets/user/no_image_user.png';
 
     return GestureDetector(
       onTap: _selectAvatarImage,
@@ -236,7 +271,9 @@ class PersonalizationViewState extends State<PersonalizationView> {
             ? FileImage(_newAvatarImage!)
             : (avatarUrl != null && avatarUrl.isNotEmpty
             ? CachedNetworkImageProvider(
-          '${AppConstants.apiBaseUrl}$avatarUrl',
+          avatarUrl.startsWith('/')
+              ? '${AppConstants.apiBaseUrl}$avatarUrl'
+              : avatarUrl,
           headers: _token != null ? {"Authorization": "Bearer $_token"} : null,
         )
             : CachedNetworkImageProvider(
@@ -271,7 +308,6 @@ class PersonalizationViewState extends State<PersonalizationView> {
         border: OutlineInputBorder(),
       ),
       obscureText: true,
-      // Пароль не обязателен, поэтому validator можно не выставлять
     );
   }
 
@@ -279,7 +315,7 @@ class PersonalizationViewState extends State<PersonalizationView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Профиль пользователя'),
+        title: const Text('Профиль пользователя', style: TextStyle(color: Colors.deepOrange)),
       ),
       drawer: const WmsDrawer(),
       body: RefreshIndicator(

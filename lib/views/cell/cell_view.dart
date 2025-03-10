@@ -52,6 +52,7 @@ class CellViewState extends State<CellView> {
   // Диалоги создания/редактирования
   // -------------------------------------------------------
   Future<void> _showCellDialog({Cell? cell}) async {
+    final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: cell?.cellName ?? '');
 
     await showDialog(
@@ -59,27 +60,38 @@ class CellViewState extends State<CellView> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (dialogContext, setStateDialog) {
+            final theme = Theme.of(dialogContext);
             return AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
               title: Text(
                 cell == null ? 'Добавить ячейку' : 'Редактировать ячейку',
+                style: theme.textTheme.titleMedium,
               ),
               content: SingleChildScrollView(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 400),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Название',
-                          border: OutlineInputBorder(),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(
+                          controller: nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Название',
+                            // Глобальная тема InputDecorationTheme обеспечит видимый контур
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Название обязательно';
+                            }
+                            return null;
+                          },
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -90,13 +102,8 @@ class CellViewState extends State<CellView> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
+                    if (!formKey.currentState!.validate()) return;
                     final name = nameController.text.trim();
-                    if (name.isEmpty) {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        const SnackBar(content: Text('Название обязательно')),
-                      );
-                      return;
-                    }
                     try {
                       String responseMessage;
                       if (cell == null) {
@@ -104,10 +111,8 @@ class CellViewState extends State<CellView> {
                       } else {
                         responseMessage = await _presenter.updateCell(cell, name: name);
                       }
-
                       if (!dialogContext.mounted) return;
                       Navigator.pop(dialogContext);
-
                       await _loadCells();
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -135,18 +140,22 @@ class CellViewState extends State<CellView> {
   }
 
   // -------------------------------------------------------
-  // Диалог удаления
+  // Диалог удаления ячейки
   // -------------------------------------------------------
   Future<void> _confirmDelete(Cell cell) async {
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (alertContext) {
+        final theme = Theme.of(alertContext);
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text('Подтверждение'),
-          content: Text('Вы уверены, что хотите удалить ячейку "${cell.cellName}"?'),
+          title: Text('Подтверждение', style: theme.textTheme.titleMedium),
+          content: Text(
+            'Вы уверены, что хотите удалить ячейку "${cell.cellName}"?',
+            style: theme.textTheme.bodyMedium,
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(alertContext, false),
@@ -184,6 +193,7 @@ class CellViewState extends State<CellView> {
   // Вспомогательные методы отображения
   // -------------------------------------------------------
   Widget _buildCellCard(Cell cell) {
+    final theme = Theme.of(context);
     return Card(
       elevation: 4,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -192,7 +202,10 @@ class CellViewState extends State<CellView> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         title: Text(
           cell.cellName,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -203,7 +216,7 @@ class CellViewState extends State<CellView> {
                 padding: EdgeInsets.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              icon: const Icon(Icons.edit, color: Colors.blue),
+              icon: Icon(Icons.edit, color: theme.colorScheme.primary),
               onPressed: () => _showCellDialog(cell: cell),
             ),
             const SizedBox(width: 16),
@@ -213,8 +226,41 @@ class CellViewState extends State<CellView> {
                 padding: EdgeInsets.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon: Icon(Icons.delete, color: theme.colorScheme.error, size: 24),
               onPressed: () => _confirmDelete(cell),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonCard() {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        title: Container(
+          width: double.infinity,
+          height: 16,
+          color: theme.dividerColor,
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              color: theme.dividerColor,
+            ),
+            const SizedBox(width: 16),
+            Container(
+              width: 24,
+              height: 24,
+              color: theme.dividerColor,
             ),
           ],
         ),
@@ -224,8 +270,16 @@ class CellViewState extends State<CellView> {
 
   Widget _buildCellList() {
     if (_cells.isEmpty) {
-      return const Center(
-        child: Text('Нет ячеек. Добавьте новую ячейку.'),
+      return Center(
+        child: RefreshIndicator(
+          onRefresh: _loadCells,
+          child: ListView(
+            children: const [
+              SizedBox(height: 400),
+              Center(child: Text('Нет ячеек. Добавьте новую ячейку.')),
+            ],
+          ),
+        ),
       );
     }
     return ListView.builder(
@@ -240,7 +294,11 @@ class CellViewState extends State<CellView> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return ListView.builder(
+        padding: const EdgeInsets.only(bottom: 80),
+        itemCount: 12,
+        itemBuilder: (context, index) => _buildSkeletonCard(),
+      );
     }
     if (_errorMessage != null) {
       return Center(child: Text(_errorMessage!));
@@ -253,9 +311,10 @@ class CellViewState extends State<CellView> {
   // -------------------------------------------------------
   @override
   Widget build(BuildContext context) {
+    Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ячейки'),
+        title: const Text('Ячейки', style: TextStyle(color: Colors.deepOrange)),
       ),
       drawer: const WmsDrawer(),
       body: LayoutBuilder(

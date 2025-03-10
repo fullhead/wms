@@ -7,7 +7,7 @@ import 'package:wms/models/group.dart';
 import 'package:wms/models/user.dart';
 import 'package:wms/presenters/group/group_presenter.dart';
 import 'package:wms/presenters/user/user_presenter.dart';
-import 'package:wms/services/auth_storage.dart';
+import 'package:wms/core/session/auth_storage.dart';
 import 'package:wms/widgets/wms_drawer.dart';
 
 class UserView extends StatefulWidget {
@@ -42,7 +42,7 @@ class UserViewState extends State<UserView> {
   }
 
   Future<void> _loadToken() async {
-    _token = await AuthStorage.getToken();
+    _token = await AuthStorage.getAccessToken();
     if (mounted) setState(() {});
   }
 
@@ -90,14 +90,14 @@ class UserViewState extends State<UserView> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library),
+              leading: Icon(Icons.photo_library, color: Theme.of(context).colorScheme.primary),
               title: const Text('Выбрать из галереи'),
               onTap: () async {
                 Navigator.of(context).pop(await _pickImageFromGallery());
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_camera),
+              leading: Icon(Icons.photo_camera, color: Theme.of(context).colorScheme.primary),
               title: const Text('Сделать фото'),
               onTap: () async {
                 Navigator.of(context).pop(await _pickImageFromCamera());
@@ -113,6 +113,7 @@ class UserViewState extends State<UserView> {
   // Методы для отображения деталей, создания, редактирования, удаления
   // -------------------------------------------------------
   void _showUserDetails(User user) {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -134,7 +135,9 @@ class UserViewState extends State<UserView> {
                   padding: const EdgeInsets.only(left: 16.0),
                   child: Text(
                     user.userFullname,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -159,29 +162,30 @@ class UserViewState extends State<UserView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Center(
-                          child: _buildDialogImage(
-                            fileImage: null,
-                            imageUrl: user.userAvatar,
-                            token: _token,
-                            width: imageSize,
-                            height: imageSize,
+                          child: CircleAvatar(
+                            radius: imageSize / 2,
+                            backgroundImage: CachedNetworkImageProvider(
+                              AppConstants.apiBaseUrl + user.userAvatar,
+                              headers: _token != null ? {"Authorization": "Bearer $_token"} : {},
+                            ),
+                            backgroundColor: theme.dividerColor,
                           ),
                         ),
                         const SizedBox(height: 20),
                         const Divider(height: 20),
                         Row(
                           children: [
-                            const Icon(Icons.login, size: 16),
+                            const Icon(Icons.login, color: Colors.deepOrange, size: 16),
                             const SizedBox(width: 4),
-                            const Text(
+                            Text(
                               "Логин:",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
                                 user.userName,
-                                style: const TextStyle(fontSize: 16),
+                                style: theme.textTheme.bodyMedium,
                               ),
                             ),
                           ],
@@ -189,11 +193,11 @@ class UserViewState extends State<UserView> {
                         const Divider(height: 20),
                         Row(
                           children: [
-                            const Icon(Icons.info, size: 16),
+                            const Icon(Icons.info, color: Colors.deepOrange, size: 16),
                             const SizedBox(width: 4),
-                            const Text(
+                            Text(
                               "Статус:",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(width: 4),
                             _buildStatusChip(user),
@@ -202,17 +206,17 @@ class UserViewState extends State<UserView> {
                         const Divider(height: 20),
                         Row(
                           children: [
-                            const Icon(Icons.group, size: 16),
+                            const Icon(Icons.group, color: Colors.deepOrange, size: 16),
                             const SizedBox(width: 4),
-                            const Text(
+                            Text(
                               "Группа:",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
                                 user.userGroup.groupName,
-                                style: const TextStyle(fontSize: 16),
+                                style: theme.textTheme.bodyMedium,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -221,17 +225,17 @@ class UserViewState extends State<UserView> {
                         const Divider(height: 20),
                         Row(
                           children: [
-                            const Icon(Icons.calendar_today, size: 16),
+                            const Icon(Icons.calendar_today, color: Colors.deepOrange, size: 16),
                             const SizedBox(width: 4),
-                            const Text(
+                            Text(
                               "Дата создания:",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
                                 user.userCreationDate.toLocal().toString().split('.')[0],
-                                style: const TextStyle(fontSize: 16),
+                                style: theme.textTheme.bodyMedium,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -240,17 +244,17 @@ class UserViewState extends State<UserView> {
                         const Divider(height: 20),
                         Row(
                           children: [
-                            const Icon(Icons.access_time, size: 16),
+                            const Icon(Icons.access_time, color: Colors.deepOrange, size: 16),
                             const SizedBox(width: 4),
-                            const Text(
+                            Text(
                               "Последний вход:",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
                                 user.userLastLoginDate.toLocal().toString().split('.')[0],
-                                style: const TextStyle(fontSize: 16),
+                                style: theme.textTheme.bodyMedium,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -269,10 +273,10 @@ class UserViewState extends State<UserView> {
                               Navigator.of(ctx).pop();
                               _showEditUserDialog(user);
                             },
-                            icon: const Icon(Icons.edit, color: Colors.blue),
-                            label: const Text(
+                            icon: Icon(Icons.edit, color: theme.colorScheme.secondary),
+                            label: Text(
                               "Редактировать",
-                              style: TextStyle(color: Colors.blue),
+                              style: TextStyle(color: theme.colorScheme.secondary),
                             ),
                           ),
                           TextButton.icon(
@@ -280,10 +284,10 @@ class UserViewState extends State<UserView> {
                               Navigator.of(ctx).pop();
                               _confirmDeleteUser(user);
                             },
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            label: const Text(
+                            icon: Icon(Icons.delete, color: theme.colorScheme.error),
+                            label: Text(
                               "Удалить",
-                              style: TextStyle(color: Colors.red),
+                              style: TextStyle(color: theme.colorScheme.error),
                             ),
                           ),
                         ],
@@ -300,6 +304,10 @@ class UserViewState extends State<UserView> {
   }
 
   Future<void> _showEditUserDialog(User user) async {
+    final currentUserId = await AuthStorage.getUserID();
+    final currentUserIdParsed = int.tryParse(currentUserId ?? '');
+    final isCurrentUser = (user.userID == currentUserIdParsed);
+
     final parentContext = context;
     final editFormKey = GlobalKey<FormState>();
 
@@ -307,16 +315,12 @@ class UserViewState extends State<UserView> {
     final usernameController = TextEditingController(text: user.userName);
     final passwordController = TextEditingController();
 
-    // Текущее значение аватара в БД.
     String imagePath = user.userAvatar;
-
-    // Если выберем новое изображение – оно временно хранится тут.
     File? editedImage;
-
-    // Если нажмём "Удалить аватар" – ставим флаг, что в итоге аватар будет удалён.
     bool isAvatarDeleted = false;
-
     bool status = user.userStatus;
+    if (isCurrentUser) status = true;
+
     Group? selectedGroup = user.userGroup;
     List<Group> allGroups = [];
 
@@ -340,6 +344,7 @@ class UserViewState extends State<UserView> {
     showDialog(
       context: context,
       builder: (inDialogContext) {
+        final theme = Theme.of(inDialogContext);
         final size = MediaQuery.of(inDialogContext).size;
         final isDesktop = size.width > 800;
         final dialogWidth = isDesktop ? size.width * 0.6 : size.width * 0.95;
@@ -348,7 +353,10 @@ class UserViewState extends State<UserView> {
         return AlertDialog(
           insetPadding: EdgeInsets.zero,
           contentPadding: const EdgeInsets.all(10),
-          title: const Text("Редактировать пользователя"),
+          title: Text(
+            "Редактировать пользователя",
+            style: theme.textTheme.titleMedium,
+          ),
           content: SizedBox(
             width: dialogWidth,
             height: dialogHeight,
@@ -360,7 +368,6 @@ class UserViewState extends State<UserView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Аватар
                         GestureDetector(
                           onTap: () async {
                             final result = await _showImageSourceSelectionDialog(inDialogContext);
@@ -376,7 +383,6 @@ class UserViewState extends State<UserView> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        // Кнопки изменения и удаления
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
@@ -397,14 +403,14 @@ class UserViewState extends State<UserView> {
                                 imagePath = '/assets/user/no_image_user.png';
                                 setStateDialog(() {});
                               },
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: theme.colorScheme.error,
+                              ),
                               child: const Text("Удалить аватар"),
                             ),
                           ],
                         ),
                         const SizedBox(height: 20),
-
-                        // Полное имя
                         TextFormField(
                           controller: fullNameController,
                           decoration: const InputDecoration(labelText: "Полное имя"),
@@ -412,8 +418,6 @@ class UserViewState extends State<UserView> {
                           (value == null || value.isEmpty) ? "Введите полное имя" : null,
                         ),
                         const SizedBox(height: 10),
-
-                        // Логин
                         TextFormField(
                           controller: usernameController,
                           decoration: const InputDecoration(labelText: "Логин"),
@@ -421,8 +425,6 @@ class UserViewState extends State<UserView> {
                           (value == null || value.isEmpty) ? "Введите логин" : null,
                         ),
                         const SizedBox(height: 10),
-
-                        // Новый пароль (необязательно)
                         TextFormField(
                           controller: passwordController,
                           decoration: const InputDecoration(
@@ -431,8 +433,6 @@ class UserViewState extends State<UserView> {
                           obscureText: true,
                         ),
                         const SizedBox(height: 10),
-
-                        // Группа
                         DropdownButtonFormField<Group>(
                           decoration: const InputDecoration(labelText: "Группа"),
                           value: selectedGroup,
@@ -452,18 +452,27 @@ class UserViewState extends State<UserView> {
                           validator: (value) => value == null ? "Выберите группу" : null,
                         ),
                         const SizedBox(height: 10),
-
-                        // Статус
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
                           title: const Text("Статус"),
                           value: status,
-                          onChanged: (bool value) {
+                          onChanged: isCurrentUser
+                              ? null
+                              : (value) {
                             setStateDialog(() {
                               status = value;
                             });
                           },
                         ),
+                        if (isCurrentUser)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text(
+                              "Нельзя заблокировать свою учетную запись.",
+                              style: TextStyle(color: Colors.red, fontSize: 12),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -480,21 +489,15 @@ class UserViewState extends State<UserView> {
               onPressed: () async {
                 if (editFormKey.currentState!.validate()) {
                   try {
-                    // Подготовим аватар к сохранению
                     String newAvatar;
                     if (isAvatarDeleted) {
-                      // Удаляем на сервере и ставим дефолт
                       await _userPresenter.deleteUserAvatar(user.userID);
                       newAvatar = '/assets/user/no_image_user.png';
                     } else if (editedImage != null) {
-                      // Если выбрали новое изображение
                       newAvatar = await _userPresenter.setUserAvatar(user.userID, editedImage!.path);
                     } else {
-                      // Если ничего не меняли
                       newAvatar = imagePath;
                     }
-
-                    // Обновляем пользователя
                     final responseMessage = await _userPresenter.updateUser(
                       user,
                       fullName: fullNameController.text.trim(),
@@ -506,14 +509,10 @@ class UserViewState extends State<UserView> {
                           : passwordController.text.trim(),
                       group: selectedGroup,
                     );
-
-                    // Закрываем диалог и обновляем список
                     if (inDialogContext.mounted) {
                       Navigator.of(inDialogContext).pop();
                     }
                     await _loadUsers();
-
-                    // Показываем уведомление об успешном обновлении
                     if (mounted) {
                       ScaffoldMessenger.of(parentContext).showSnackBar(
                         SnackBar(
@@ -552,7 +551,6 @@ class UserViewState extends State<UserView> {
     final passwordController = TextEditingController();
 
     File? newImage;
-    String? avatarPath;
     bool status = true;
     Group? selectedGroup;
     List<Group> allGroups = [];
@@ -574,6 +572,7 @@ class UserViewState extends State<UserView> {
     showDialog(
       context: context,
       builder: (inDialogContext) {
+        final theme = Theme.of(inDialogContext);
         final size = MediaQuery.of(inDialogContext).size;
         final isDesktop = size.width > 800;
         final dialogWidth = isDesktop ? size.width * 0.6 : size.width * 0.95;
@@ -582,7 +581,10 @@ class UserViewState extends State<UserView> {
         return AlertDialog(
           insetPadding: EdgeInsets.zero,
           contentPadding: const EdgeInsets.all(10),
-          title: const Text("Создать пользователя"),
+          title: Text(
+            "Создать пользователя",
+            style: theme.textTheme.titleMedium,
+          ),
           content: SizedBox(
             width: dialogWidth,
             height: dialogHeight,
@@ -594,7 +596,6 @@ class UserViewState extends State<UserView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Выбор/отображение аватара
                         GestureDetector(
                           onTap: () async {
                             final result = await _showImageSourceSelectionDialog(inDialogContext);
@@ -624,19 +625,17 @@ class UserViewState extends State<UserView> {
                             ),
                             ElevatedButton(
                               onPressed: () {
-                                // Очистка выбранного аватара
                                 newImage = null;
-                                avatarPath = '/assets/user/no_image_user.png';
                                 setStateDialog(() {});
                               },
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: theme.colorScheme.error,
+                              ),
                               child: const Text("Очистить аватар"),
                             ),
                           ],
                         ),
                         const SizedBox(height: 20),
-
-                        // Полное имя
                         TextFormField(
                           controller: fullNameController,
                           decoration: const InputDecoration(labelText: "Полное имя"),
@@ -644,8 +643,6 @@ class UserViewState extends State<UserView> {
                           (value == null || value.isEmpty) ? "Введите полное имя" : null,
                         ),
                         const SizedBox(height: 10),
-
-                        // Логин
                         TextFormField(
                           controller: usernameController,
                           decoration: const InputDecoration(labelText: "Логин"),
@@ -653,8 +650,6 @@ class UserViewState extends State<UserView> {
                           (value == null || value.isEmpty) ? "Введите логин" : null,
                         ),
                         const SizedBox(height: 10),
-
-                        // Пароль
                         TextFormField(
                           controller: passwordController,
                           decoration: const InputDecoration(labelText: "Пароль"),
@@ -663,8 +658,6 @@ class UserViewState extends State<UserView> {
                           (value == null || value.isEmpty) ? "Введите пароль" : null,
                         ),
                         const SizedBox(height: 10),
-
-                        // Группа
                         DropdownButtonFormField<Group>(
                           decoration: const InputDecoration(labelText: "Группа"),
                           value: selectedGroup,
@@ -684,8 +677,6 @@ class UserViewState extends State<UserView> {
                           validator: (value) => value == null ? "Выберите группу" : null,
                         ),
                         const SizedBox(height: 10),
-
-                        // Статус
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
                           title: const Text("Статус"),
@@ -712,16 +703,14 @@ class UserViewState extends State<UserView> {
               onPressed: () async {
                 if (createFormKey.currentState!.validate() && selectedGroup != null) {
                   try {
-                    // При создании, если avatarPath не задан, сервер сам поставит дефолт.
                     final responseMessage = await _userPresenter.createUser(
                       fullName: fullNameController.text.trim(),
                       username: usernameController.text.trim(),
                       password: passwordController.text.trim(),
                       group: selectedGroup!,
-                      avatar: avatarPath ?? '',
+                      avatarFilePath: newImage?.path,
                       status: status,
                     );
-
                     if (inDialogContext.mounted) {
                       Navigator.of(inDialogContext).pop();
                     }
@@ -755,7 +744,23 @@ class UserViewState extends State<UserView> {
     );
   }
 
+  // -------------------------------------------------------
+  // Запрещаем удаление текущей учетной записи
+  // -------------------------------------------------------
   Future<void> _confirmDeleteUser(User user) async {
+    final currentUserId = await AuthStorage.getUserID();
+    final currentUserIdParsed = int.tryParse(currentUserId ?? '');
+    if (user.userID == currentUserIdParsed) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Невозможно удалить учетную запись, с которой вы авторизованы."),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    if (!mounted) return;
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (alertContext) => AlertDialog(
@@ -801,17 +806,23 @@ class UserViewState extends State<UserView> {
   // Виджеты для статуса и изображения
   // -------------------------------------------------------
   Widget _buildStatusChip(User user) {
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.secondary;
+    final errorColor = theme.colorScheme.error;
     final isActive = user.userStatus;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isActive ? Colors.green[100] : Colors.red[100],
+        color: isActive
+            ? primaryColor.withOpacity(0.1)
+            : errorColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         isActive ? 'Активен' : 'Заблокирован',
         style: TextStyle(
-          color: isActive ? Colors.green[800] : Colors.red[800],
+          color: isActive ? primaryColor : errorColor,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -826,7 +837,7 @@ class UserViewState extends State<UserView> {
     double width = 250,
     double height = 250,
   }) {
-    // Если выбрано локальное изображение
+    final theme = Theme.of(context);
     if (fileImage != null) {
       return Container(
         width: width,
@@ -836,13 +847,11 @@ class UserViewState extends State<UserView> {
             image: FileImage(fileImage),
             fit: BoxFit.cover,
           ),
-          color: Colors.grey[300],
+          color: theme.dividerColor,
           borderRadius: BorderRadius.circular(4),
         ),
       );
-    }
-    // Если есть ссылка на изображение
-    else if (imageUrl != null && imageUrl.isNotEmpty) {
+    } else if (imageUrl != null && imageUrl.isNotEmpty) {
       return Container(
         width: width,
         height: height,
@@ -854,51 +863,77 @@ class UserViewState extends State<UserView> {
             ),
             fit: BoxFit.cover,
           ),
-          color: Colors.grey[300],
+          color: theme.dividerColor,
           borderRadius: BorderRadius.circular(4),
         ),
       );
     }
-    // Пустой контейнер с иконкой
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: Colors.grey[300],
+        color: theme.dividerColor,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: showPlaceholder ? const Icon(Icons.person, size: 50) : null,
+      child: showPlaceholder ? const Icon(Icons.person, color: Colors.deepOrange, size: 50) : null,
     );
   }
 
   // -------------------------------------------------------
-  // Построение списка/пустого состояния
+  // Построение основного интерфейса
   // -------------------------------------------------------
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+  Widget _buildSkeletonCard() {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+        leading: Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(8.0),
+          ),
+        ),
+        title: Container(
+          width: double.infinity,
+          height: 16,
+          color: Colors.grey.shade300,
+        ),
+        subtitle: Container(
+          margin: const EdgeInsets.only(top: 10),
+          width: double.infinity,
+          height: 14,
+          color: Colors.grey.shade300,
+        ),
+      ),
+    );
+  }
 
+  Widget _buildBody() {
+    final theme = Theme.of(context);
+    if (_isLoading) {
+      return ListView.builder(
+        itemCount: 10,
+        itemBuilder: (context, index) => _buildSkeletonCard(),
+      );
+    }
     if (_users.isEmpty) {
-      // Плашка, если нет пользователей
       return Center(
         child: RefreshIndicator(
+          color: theme.colorScheme.primary,
           onRefresh: _loadUsers,
           child: ListView(
-            // ListView нужен, чтобы работал RefreshIndicator
             children: const [
-              SizedBox(height: 200),
-              Center(
-                child: Text('Нет пользователей. Добавьте нового пользователя.'),
-              ),
+              SizedBox(height: 400),
+              Center(child: Text('Нет пользователей. Добавьте нового пользователя.')),
             ],
           ),
         ),
       );
     }
-
-    // Иначе отображаем список
     return RefreshIndicator(
+      color: theme.colorScheme.primary,
       onRefresh: _loadUsers,
       child: ListView.builder(
         itemCount: _users.length,
@@ -911,6 +946,7 @@ class UserViewState extends State<UserView> {
   }
 
   Widget _buildUserCard(User user) {
+    final theme = Theme.of(context);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       child: ListTile(
@@ -919,13 +955,13 @@ class UserViewState extends State<UserView> {
           radius: 30,
           backgroundImage: CachedNetworkImageProvider(
             AppConstants.apiBaseUrl + user.userAvatar,
-            headers: _token != null ? {"Authorization": "Bearer $_token"} : null,
+            headers: _token != null ? {"Authorization": "Bearer $_token"} : {},
           ),
-          backgroundColor: Colors.grey[300],
+          backgroundColor: theme.dividerColor,
         ),
         title: Text(
           user.userFullname,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -936,13 +972,13 @@ class UserViewState extends State<UserView> {
                 Flexible(
                   child: Text(
                     user.userName,
-                    style: const TextStyle(fontSize: 14),
+                    style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Text(
                   user.userLastLoginDate.toLocal().toString().split('.')[0],
-                  style: const TextStyle(fontSize: 10),
+                  style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
                 ),
               ],
             ),
@@ -954,11 +990,11 @@ class UserViewState extends State<UserView> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.group, size: 16),
+                    const Icon(Icons.group, color: Colors.deepOrange, size: 16),
                     const SizedBox(width: 4),
                     Text(
                       user.userGroup.groupName,
-                      style: const TextStyle(fontSize: 12),
+                      style: theme.textTheme.bodySmall?.copyWith(fontSize: 12),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -979,7 +1015,7 @@ class UserViewState extends State<UserView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Пользователи'),
+        title: const Text('Пользователи', style: TextStyle(color: Colors.deepOrange)),
       ),
       drawer: const WmsDrawer(),
       body: LayoutBuilder(

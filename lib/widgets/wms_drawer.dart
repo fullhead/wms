@@ -4,7 +4,7 @@ import 'package:wms/core/constants.dart';
 import 'package:wms/core/routes.dart';
 import 'package:wms/models/user.dart';
 import 'package:wms/presenters/personalization/personalization_presenter.dart';
-import 'package:wms/services/auth_storage.dart';
+import 'package:wms/core/session/auth_storage.dart';
 
 class WmsDrawer extends StatefulWidget {
   const WmsDrawer({super.key});
@@ -14,20 +14,16 @@ class WmsDrawer extends StatefulWidget {
 }
 
 class WmsDrawerState extends State<WmsDrawer> {
-  // -------------------------------------------------------
-  // Поля
-  // -------------------------------------------------------
   String? _activeRoute;
   String? _token;
   final _personalizationPresenter = PersonalizationPresenter();
+  late Future<User?> _currentUserFuture;
 
-  // -------------------------------------------------------
-  // Жизненный цикл
-  // -------------------------------------------------------
   @override
   void initState() {
     super.initState();
     _loadToken();
+    _currentUserFuture = _personalizationPresenter.getCurrentUser();
   }
 
   @override
@@ -37,13 +33,10 @@ class WmsDrawerState extends State<WmsDrawer> {
   }
 
   Future<void> _loadToken() async {
-    _token = await AuthStorage.getToken();
+    _token = await AuthStorage.getAccessToken();
     if (mounted) setState(() {});
   }
 
-  // -------------------------------------------------------
-  // Методы навигации
-  // -------------------------------------------------------
   void _handleNavigation(String route) {
     if (_activeRoute == route) {
       Navigator.pop(context);
@@ -53,20 +46,17 @@ class WmsDrawerState extends State<WmsDrawer> {
   }
 
   Future<void> _logout() async {
-    await AuthStorage.deleteToken();
-    await AuthStorage.deleteUserID();
+    await AuthStorage.clearSession();
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, AppRoutes.authorization);
   }
 
-  // -------------------------------------------------------
-  // Методы стилей
-  // -------------------------------------------------------
+  // Используем тему для стилизации пунктов меню:
   TextStyle _menuItemStyle(String route) {
     final isActive = _activeRoute == route;
     return TextStyle(
       fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-      color: isActive ? Colors.blue : Colors.black,
+      color: isActive ? Theme.of(context).colorScheme.primary : Colors.black87,
       fontSize: 16,
     );
   }
@@ -75,14 +65,11 @@ class WmsDrawerState extends State<WmsDrawer> {
     final isActive = _activeRoute == route;
     return TextStyle(
       fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-      color: isActive ? Colors.blue : Colors.black,
+      color: isActive ? Theme.of(context).colorScheme.primary : Colors.black87,
       fontSize: 14,
     );
   }
 
-  // -------------------------------------------------------
-  // Построение аватара
-  // -------------------------------------------------------
   Widget _buildAvatar(User user) {
     final userAvatar = user.userAvatar.isNotEmpty
         ? user.userAvatar
@@ -97,45 +84,40 @@ class WmsDrawerState extends State<WmsDrawer> {
     );
   }
 
-  // -------------------------------------------------------
-  // Хедер с информацией о пользователе
-  // -------------------------------------------------------
   Widget _buildDrawerHeader() {
     return Container(
-      color: Colors.blue,
+      color: Theme.of(context).primaryColor, // Используем primaryColor из темы
       height: 172,
       padding: const EdgeInsets.all(12),
-      child: FutureBuilder<User>(
-        future: _personalizationPresenter.getCurrentUser(),
+      child: FutureBuilder<User?>(
+        future: _currentUserFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            );
+            return _buildHeaderSkeleton();
           }
-          if (snapshot.hasError) {
-            return const Align(
+          if (snapshot.hasError || !snapshot.hasData) {
+            return Align(
               alignment: Alignment.bottomLeft,
               child: Text(
                 'Администратор',
-                style: TextStyle(color: Colors.white, fontSize: 20),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(color: Colors.white),
               ),
             );
-          }
-          if (!snapshot.hasData) {
-            // Нет данных (например, пользователь не найден)
-            return const SizedBox.shrink();
           }
           final user = snapshot.data!;
           return Column(
             mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Администратор',
-                style: TextStyle(color: Colors.white, fontSize: 20),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(color: Colors.white),
               ),
               const SizedBox(height: 8),
               Row(
@@ -145,7 +127,10 @@ class WmsDrawerState extends State<WmsDrawer> {
                   Expanded(
                     child: Text(
                       user.userFullname,
-                      style: const TextStyle(color: Colors.white, fontSize: 18),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(color: Colors.white),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -159,9 +144,29 @@ class WmsDrawerState extends State<WmsDrawer> {
     );
   }
 
-  // -------------------------------------------------------
-  // Построение меню
-  // -------------------------------------------------------
+  Widget _buildHeaderSkeleton() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 70,
+          height: 70,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.3),
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: 150,
+          height: 20,
+          color: Colors.white.withOpacity(0.3),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -169,10 +174,6 @@ class WmsDrawerState extends State<WmsDrawer> {
         padding: EdgeInsets.zero,
         children: [
           _buildDrawerHeader(),
-
-          // -----------------
-          // Основное меню
-          // -----------------
           ListTile(
             leading: const Icon(Icons.dashboard),
             title: Text(
@@ -291,8 +292,7 @@ class WmsDrawerState extends State<WmsDrawer> {
           ),
           ListTile(
             leading: const Icon(Icons.person_pin),
-            title: Text('Персонализация',
-                style: _menuItemStyle(AppRoutes.personalization)),
+            title: Text('Персонализация', style: _menuItemStyle(AppRoutes.personalization)),
             selected: _activeRoute == AppRoutes.personalization,
             onTap: () => _handleNavigation(AppRoutes.personalization),
           ),

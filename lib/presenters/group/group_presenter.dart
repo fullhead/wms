@@ -8,7 +8,7 @@ class GroupPresenter {
 
   GroupPresenter({GroupRepository? groupRepository})
       : _groupRepository = groupRepository ??
-            GroupRepository(baseUrl: AppConstants.apiBaseUrl);
+      GroupRepository(baseUrl: AppConstants.apiBaseUrl);
 
   /// Получает список всех групп.
   Future<List<Group>> fetchAllGroups() async {
@@ -38,11 +38,11 @@ class GroupPresenter {
 
   /// Обновляет данные группы.
   Future<String> updateGroup(
-    Group group, {
-    String? name,
-    String? accessLevel,
-    bool? status,
-  }) async {
+      Group group, {
+        String? name,
+        String? accessLevel,
+        bool? status,
+      }) async {
     if (name != null) group.groupName = name;
     if (accessLevel != null) group.groupAccessLevel = accessLevel;
     if (status != null) group.groupStatus = status;
