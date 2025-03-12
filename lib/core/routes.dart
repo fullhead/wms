@@ -21,7 +21,7 @@ class AppRoutes {
   static const String groups = '/groups';
   static const String categories = '/categories';
   static const String products = '/products';
-  static const String receipts = '/receipts';
+  static const String receives = '/receives';
   static const String issues = '/issues';
   static const String warehouse = '/warehouse';
   static const String cells = '/cells';
@@ -38,7 +38,7 @@ class AppRoutes {
       groups: (context) => const GroupView(),
       categories: (context) => const CategoryView(),
       products: (context) => const ProductView(),
-      receipts: (context) => const ReceiveView(),
+      receives: (context) => const ReceiveView(),
       issues: (context) => const IssueView(),
       warehouse: (context) => const WarehouseView(),
       cells: (context) => const CellView(),

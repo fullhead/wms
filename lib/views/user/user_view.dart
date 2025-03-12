@@ -936,6 +936,7 @@ class UserViewState extends State<UserView> {
       color: theme.colorScheme.primary,
       onRefresh: _loadUsers,
       child: ListView.builder(
+        padding: const EdgeInsets.only(bottom: 80),
         itemCount: _users.length,
         itemBuilder: (context, index) {
           final user = _users[index];

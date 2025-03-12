@@ -284,9 +284,10 @@ class CategoryViewState extends State<CategoryView> {
         child: RefreshIndicator(
           onRefresh: _loadCategories,
           child: ListView(
-            children: const [
-              SizedBox(height: 400),
-              Center(child: Text('Нет категорий. Добавьте новую категорию.')),
+            children: [
+              const SizedBox(height: 400),
+              const Center(child: Text('Нет категорий. Добавьте новую категорию.')),
+              const SizedBox(height: 16),
             ],
           ),
         ),

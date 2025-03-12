@@ -6,6 +6,7 @@ import 'package:wms/models/warehouse.dart';
 import 'package:wms/presenters/warehouse/warehouse_presenter.dart';
 import 'package:wms/widgets/wms_drawer.dart';
 import 'package:wms/core/session/auth_storage.dart';
+import 'package:wms/core/routes.dart';
 
 /// Главное представление склада [WarehouseView].
 /// Использует [WarehousePresenter] для загрузки данных.
@@ -119,12 +120,14 @@ class WarehouseViewState extends State<WarehouseView> {
 
     // Фильтрация по количеству (мин)
     if (_minQuantity != null) {
-      filtered = filtered.where((w) => w.warehouseQuantity >= _minQuantity!).toList();
+      filtered =
+          filtered.where((w) => w.warehouseQuantity >= _minQuantity!).toList();
     }
 
     // Фильтрация по количеству (макс)
     if (_maxQuantity != null) {
-      filtered = filtered.where((w) => w.warehouseQuantity <= _maxQuantity!).toList();
+      filtered =
+          filtered.where((w) => w.warehouseQuantity <= _maxQuantity!).toList();
     }
 
     // Фильтрация по дате (начало)
@@ -183,7 +186,6 @@ class WarehouseViewState extends State<WarehouseView> {
             children: [
               Icon(
                 _hasActiveFilters ? Icons.filter_alt : Icons.filter_list,
-                // Добавляем пример тематического цвета для иконки
                 color: _hasActiveFilters
                     ? Theme.of(context).colorScheme.primary
                     : null,
@@ -209,7 +211,6 @@ class WarehouseViewState extends State<WarehouseView> {
                           Icon(
                             Icons.location_on,
                             size: 16,
-                            // При активном выборе ячейки меняем цвет на primary
                             color: (tempSelectedCell != null)
                                 ? Theme.of(context).colorScheme.primary
                                 : null,
@@ -227,18 +228,20 @@ class WarehouseViewState extends State<WarehouseView> {
                       ),
                       Container(
                         width: isDesktop
-                            ? MediaQuery.of(context).size.width * 0.5 // 50% экрана на десктопе
-                            : MediaQuery.of(context).size.width * 0.8, // 80% на мобильном
+                            ? MediaQuery.of(context).size.width * 0.5
+                            : MediaQuery.of(context).size.width * 0.8,
                         alignment: Alignment.centerLeft,
                         child: DropdownButton<String>(
                           isExpanded: true,
                           value: tempSelectedCell,
                           hint: const Text('Все ячейки'),
                           items: cells
-                              .map((cell) => DropdownMenuItem(
-                            value: cell,
-                            child: Text(cell),
-                          ))
+                              .map(
+                                (cell) => DropdownMenuItem(
+                              value: cell,
+                              child: Text(cell),
+                            ),
+                          )
                               .toList(),
                           onChanged: (value) {
                             setStateDialog(() {
@@ -258,9 +261,10 @@ class WarehouseViewState extends State<WarehouseView> {
                           Icon(
                             Icons.format_list_numbered,
                             size: 16,
-                            // Если min или max заполнены, меняем цвет на primary
-                            color: ((tempMinQuantity != null && tempMinQuantity!.isNotEmpty) ||
-                                (tempMaxQuantity != null && tempMaxQuantity!.isNotEmpty))
+                            color: ((tempMinQuantity != null &&
+                                tempMinQuantity!.isNotEmpty) ||
+                                (tempMaxQuantity != null &&
+                                    tempMaxQuantity!.isNotEmpty))
                                 ? Theme.of(context).colorScheme.primary
                                 : null,
                           ),
@@ -268,8 +272,10 @@ class WarehouseViewState extends State<WarehouseView> {
                           Text(
                             'Количество (мин - макс):',
                             style: TextStyle(
-                              color: ((tempMinQuantity != null && tempMinQuantity!.isNotEmpty) ||
-                                  (tempMaxQuantity != null && tempMaxQuantity!.isNotEmpty))
+                              color: ((tempMinQuantity != null &&
+                                  tempMinQuantity!.isNotEmpty) ||
+                                  (tempMaxQuantity != null &&
+                                      tempMaxQuantity!.isNotEmpty))
                                   ? Theme.of(context).colorScheme.primary
                                   : null,
                             ),
@@ -342,8 +348,9 @@ class WarehouseViewState extends State<WarehouseView> {
                                 final picked = await showDatePicker(
                                   context: context,
                                   locale: const Locale('ru', 'RU'),
-                                  initialDate:
-                                  tempStartDate ?? DateTime.now().subtract(const Duration(days: 30)),
+                                  initialDate: tempStartDate ??
+                                      DateTime.now()
+                                          .subtract(const Duration(days: 30)),
                                   firstDate: DateTime(2000),
                                   lastDate: DateTime.now(),
                                 );
@@ -425,7 +432,8 @@ class WarehouseViewState extends State<WarehouseView> {
                           if (tempStartDate != null)
                             Chip(
                               label: Text(
-                                  'С: ${tempStartDate?.toLocal().toString().split(' ')[0]}'),
+                                'С: ${tempStartDate?.toLocal().toString().split(' ')[0]}',
+                              ),
                               onDeleted: () {
                                 setStateDialog(() {
                                   tempStartDate = null;
@@ -435,7 +443,8 @@ class WarehouseViewState extends State<WarehouseView> {
                           if (tempEndDate != null)
                             Chip(
                               label: Text(
-                                  'По: ${tempEndDate?.toLocal().toString().split(' ')[0]}'),
+                                'По: ${tempEndDate?.toLocal().toString().split(' ')[0]}',
+                              ),
                               onDeleted: () {
                                 setStateDialog(() {
                                   tempEndDate = null;
@@ -471,10 +480,12 @@ class WarehouseViewState extends State<WarehouseView> {
                 // Сохраняем временные значения в основной State
                 setState(() {
                   _selectedCell = tempSelectedCell;
-                  _minQuantity = (tempMinQuantity != null && tempMinQuantity!.isNotEmpty)
+                  _minQuantity = (tempMinQuantity != null &&
+                      tempMinQuantity!.isNotEmpty)
                       ? int.tryParse(tempMinQuantity!)
                       : null;
-                  _maxQuantity = (tempMaxQuantity != null && tempMaxQuantity!.isNotEmpty)
+                  _maxQuantity = (tempMaxQuantity != null &&
+                      tempMaxQuantity!.isNotEmpty)
                       ? int.tryParse(tempMaxQuantity!)
                       : null;
                   _startDate = tempStartDate;
@@ -492,7 +503,7 @@ class WarehouseViewState extends State<WarehouseView> {
   }
 
   // -------------------------------------------------------
-  // Вспомогательные методы
+  // Вспомогательные методы отображения
   // -------------------------------------------------------
   /// Универсальное построение изображения (локальный файл, сетевое изображение или дефолтная иконка)
   Widget _buildDialogImage({
@@ -607,11 +618,13 @@ class WarehouseViewState extends State<WarehouseView> {
                         const Divider(height: 20),
                         Row(
                           children: [
-                            const Icon(Icons.inventory, color: Colors.deepOrange, size: 16),
+                            const Icon(Icons.inventory,
+                                color: Colors.deepOrange, size: 16),
                             const SizedBox(width: 4),
                             const Text(
                               "Продукт:",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                             const SizedBox(width: 4),
                             Flexible(
@@ -625,11 +638,13 @@ class WarehouseViewState extends State<WarehouseView> {
                         const Divider(height: 20),
                         Row(
                           children: [
-                            const Icon(Icons.location_on, color: Colors.deepOrange, size: 16),
+                            const Icon(Icons.location_on,
+                                color: Colors.deepOrange, size: 16),
                             const SizedBox(width: 4),
                             const Text(
                               "Ячейка:",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                             const SizedBox(width: 4),
                             Flexible(
@@ -643,11 +658,13 @@ class WarehouseViewState extends State<WarehouseView> {
                         const Divider(height: 20),
                         Row(
                           children: [
-                            const Icon(Icons.format_list_numbered, color: Colors.deepOrange, size: 16),
+                            const Icon(Icons.format_list_numbered,
+                                color: Colors.deepOrange, size: 16),
                             const SizedBox(width: 4),
                             const Text(
                               "Количество:",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                             const SizedBox(width: 4),
                             Flexible(
@@ -661,16 +678,21 @@ class WarehouseViewState extends State<WarehouseView> {
                         const Divider(height: 20),
                         Row(
                           children: [
-                            const Icon(Icons.access_time, color: Colors.deepOrange, size: 16),
+                            const Icon(Icons.access_time,
+                                color: Colors.deepOrange, size: 16),
                             const SizedBox(width: 4),
                             const Text(
                               "Обновлено:",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
-                                warehouse.warehouseUpdateDate.toLocal().toString().split('.')[0],
+                                warehouse.warehouseUpdateDate
+                                    .toLocal()
+                                    .toString()
+                                    .split('.')[0],
                                 style: const TextStyle(fontSize: 16),
                               ),
                             ),
@@ -683,7 +705,8 @@ class WarehouseViewState extends State<WarehouseView> {
                     Center(
                       child: TextButton(
                         onPressed: () => Navigator.of(ctx).pop(),
-                        child: const Text("Закрыть", style: TextStyle(fontSize: 16)),
+                        child: const Text("Закрыть",
+                            style: TextStyle(fontSize: 16)),
                       ),
                     ),
                   ],
@@ -706,10 +729,12 @@ class WarehouseViewState extends State<WarehouseView> {
             ? CircleAvatar(
           radius: 30,
           backgroundImage: CachedNetworkImageProvider(
-            AppConstants.apiBaseUrl + warehouse.warehouseProductID.productImage,
-            headers: _token != null ? {"Authorization": "Bearer $_token"} : null,
+            AppConstants.apiBaseUrl +
+                warehouse.warehouseProductID.productImage,
+            headers: _token != null
+                ? {"Authorization": "Bearer $_token"}
+                : null,
           ),
-          // Заменили жёсткий цвет на theme.dividerColor
           backgroundColor: Theme.of(context).dividerColor,
         )
             : CircleAvatar(
@@ -727,7 +752,8 @@ class WarehouseViewState extends State<WarehouseView> {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.location_on, color: Colors.deepOrange, size: 14),
+                const Icon(Icons.location_on,
+                    color: Colors.deepOrange, size: 14),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text("Ячейка: ${warehouse.warehouseCellID.cellName}"),
@@ -736,7 +762,8 @@ class WarehouseViewState extends State<WarehouseView> {
             ),
             Row(
               children: [
-                const Icon(Icons.format_list_numbered, color: Colors.deepOrange, size: 14),
+                const Icon(Icons.format_list_numbered,
+                    color: Colors.deepOrange, size: 14),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text("Количество: ${warehouse.warehouseQuantity}"),
@@ -746,7 +773,8 @@ class WarehouseViewState extends State<WarehouseView> {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.access_time, color: Colors.deepOrange, size: 14),
+                const Icon(Icons.access_time,
+                    color: Colors.deepOrange, size: 14),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
@@ -763,6 +791,115 @@ class WarehouseViewState extends State<WarehouseView> {
     );
   }
 
+  /// Создаём скелетон-карту
+  Widget _buildSkeletonCard() {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        leading: Container(
+          width: 48,
+          height: 48,
+          color: theme.dividerColor,
+        ),
+        title: Container(
+          width: double.infinity,
+          height: 16,
+          color: theme.dividerColor,
+        ),
+        subtitle: Container(
+          margin: const EdgeInsets.only(top: 8),
+          width: double.infinity,
+          height: 16,
+          color: theme.dividerColor,
+        ),
+      ),
+    );
+  }
+
+  /// Строим основной контент страницы (с учётом загрузки, пустого списка и т.д.)
+  Widget _buildBody(List<Warehouse> displayedWarehouses) {
+    if (_isLoading) {
+      // Показываем список из нескольких скелетонов
+      return ListView.builder(
+        itemCount: 12,
+        itemBuilder: (context, index) => _buildSkeletonCard(),
+      );
+    }
+
+    if (displayedWarehouses.isEmpty) {
+      if (_searchQuery.isNotEmpty) {
+        // Если поиск нечего не дал, выводим сообщение
+        return ListView(
+          children: [
+            const SizedBox(height: 400),
+            Center(
+              child: Text(
+                'Нечего не найдено!',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        );
+      }
+      if (_hasActiveFilters) {
+        // Если активен хотя бы один фильтр, выводим сообщение
+        return ListView(
+          children: [
+            const SizedBox(height: 400),
+            Center(
+              child: Text(
+                'По выбранным фильтрам продукций не найдено!',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        );
+      } else {
+        // Если данных в базе вообще нет, выводим сообщение с кнопкой перехода
+        return ListView(
+          children: [
+            const SizedBox(height: 400),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Нет складских данных. Начните приёмку продукций!',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, AppRoutes.receives);
+                    },
+                    child: const Text('Начать приёмку'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      }
+    }
+
+    // Если данные есть, показываем их
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 80),
+      itemCount: displayedWarehouses.length,
+      itemBuilder: (context, index) {
+        final warehouse = displayedWarehouses[index];
+        return _buildWarehouseCard(warehouse);
+      },
+    );
+  }
+
+  // -------------------------------------------------------
+  // Основной build
+  // -------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     // Итоговый список для отображения (учитываем и _searchQuery)
@@ -819,7 +956,6 @@ class WarehouseViewState extends State<WarehouseView> {
               IconButton(
                 icon: Icon(
                   _hasActiveFilters ? Icons.filter_alt : Icons.filter_list,
-                  // Вместо Colors.black используем цвет из темы
                   color: theme.colorScheme.primary,
                 ),
                 onPressed: _openFilterDialog,
@@ -858,18 +994,9 @@ class WarehouseViewState extends State<WarehouseView> {
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 800),
-              child: _isLoading
-                  ? /* Если хотите вместо CircularProgressIndicator – используйте скелетон */
-              const Center(child: CircularProgressIndicator())
-                  : RefreshIndicator(
+              child: RefreshIndicator(
                 onRefresh: _loadWarehouses,
-                child: ListView.builder(
-                  itemCount: displayedWarehouses.length,
-                  itemBuilder: (context, index) {
-                    final warehouse = displayedWarehouses[index];
-                    return _buildWarehouseCard(warehouse);
-                  },
-                ),
+                child: _buildBody(displayedWarehouses),
               ),
             ),
           );

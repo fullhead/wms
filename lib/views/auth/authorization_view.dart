@@ -39,7 +39,6 @@ class _AuthorizationViewState extends State<AuthorizationView> {
 
         if (!mounted) return;
         Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
-
       } catch (error) {
         // Обрабатываем возможные варианты: ApiException или «просто строку»
         if (error is ApiException) {
@@ -66,10 +65,6 @@ class _AuthorizationViewState extends State<AuthorizationView> {
   Widget build(BuildContext context) {
     // Используем LayoutBuilder для адаптивного расчёта отступов
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('WMS - система'),
-        centerTitle: true,
-      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final horizontalPadding =
@@ -92,6 +87,15 @@ class _AuthorizationViewState extends State<AuthorizationView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Логотип приложения (PNG) размещается ниже AppBar.
+                      Center(
+                        child: Image.asset(
+                          'lib/assets/logo.png',
+                          height: 150, // оптимальный размер для экрана авторизации
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
                       const Text(
                         'Авторизоваться',
                         textAlign: TextAlign.center,
@@ -101,7 +105,6 @@ class _AuthorizationViewState extends State<AuthorizationView> {
                         ),
                       ),
                       const SizedBox(height: 24),
-
                       // Отображение ошибки
                       if (_errorMessage != null)
                         Container(
@@ -127,7 +130,6 @@ class _AuthorizationViewState extends State<AuthorizationView> {
                             ],
                           ),
                         ),
-
                       // Поле логина
                       TextFormField(
                         controller: _usernameController,
@@ -143,7 +145,6 @@ class _AuthorizationViewState extends State<AuthorizationView> {
                         },
                       ),
                       const SizedBox(height: 16),
-
                       // Поле пароля
                       TextFormField(
                         controller: _passwordController,
@@ -160,7 +161,6 @@ class _AuthorizationViewState extends State<AuthorizationView> {
                         },
                       ),
                       const SizedBox(height: 24),
-
                       // Кнопка входа или индикатор загрузки
                       _isLoading
                           ? const Center(child: CircularProgressIndicator())

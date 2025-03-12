@@ -79,11 +79,11 @@ class SplashScreenState extends State<SplashScreen> {
           final screenWidth = constraints.maxWidth;
           final screenHeight = constraints.maxHeight;
           final animationSize =
-              (screenWidth < screenHeight ? screenWidth : screenHeight) * 0.5;
+              (screenWidth < screenHeight ? screenWidth : screenHeight) * 1;
 
           return Center(
             child: Lottie.asset(
-              'lib/assets/splash_animation.json',
+              'lib/assets/logo_splash_animation.json',
               width: animationSize,
               height: animationSize,
               fit: BoxFit.contain,

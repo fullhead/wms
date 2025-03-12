@@ -86,9 +86,6 @@ class WmsApp extends StatelessWidget {
         radioTheme: RadioThemeData(
           fillColor: WidgetStateProperty.all(Colors.deepOrange),
         ),
-        checkboxTheme: CheckboxThemeData(
-          fillColor: WidgetStateProperty.all(Colors.deepOrange),
-        ),
 
         // Опционально можно уточнить цвета текста для ListTile
         listTileTheme: const ListTileThemeData(

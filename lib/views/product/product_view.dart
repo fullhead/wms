@@ -139,9 +139,18 @@ class ProductViewState extends State<ProductView> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Фильтр по категориям'),
+          title: Row(
+            children: [
+              Icon(
+                tempSelected.isNotEmpty ? Icons.filter_alt : Icons.filter_list,
+                color: tempSelected.isNotEmpty ? Theme.of(dialogContext).colorScheme.primary : null,
+              ),
+              const SizedBox(width: 4),
+              Text('По категориям${tempSelected.isNotEmpty ? ' (${tempSelected.length})' : ''}'),
+            ],
+          ),
           content: SizedBox(
-            width: double.maxFinite,
+            width: double.minPositive,
             child: ListView.builder(
               shrinkWrap: true,
               itemCount: categories.length,
@@ -149,7 +158,12 @@ class ProductViewState extends State<ProductView> {
                 final cat = categories[index];
                 final isSelected = tempSelected.contains(cat.categoryID);
                 return CheckboxListTile(
-                  title: Text(cat.categoryName),
+                  title: Text(
+                    cat.categoryName,
+                    style: TextStyle(
+                      color: isSelected ? Theme.of(ctx).colorScheme.primary : null,
+                    ),
+                  ),
                   value: isSelected,
                   onChanged: (checked) {
                     if (checked == true) {
@@ -794,23 +808,72 @@ class ProductViewState extends State<ProductView> {
     }
 
     if (displayedProducts.isEmpty) {
-      return Center(
-        child: RefreshIndicator(
-          onRefresh: _loadProducts,
-          color: Theme.of(context).colorScheme.primary,
-          child: ListView(
-            children: const [
-              SizedBox(height: 400),
-              Center(child: Text('Нет продукции. Добавьте новую продукцию.')),
-            ],
+      if (_searchQuery.isNotEmpty) {
+        // Если поиск нечего не дал, выводим сообщение
+        return ListView(
+          children: [
+            const SizedBox(height: 400),
+            Center(
+              child: Text(
+                'Нечего не найдено!',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        );
+      }
+      if (_selectedCategoryIds.isNotEmpty) {
+        // Если активны фильтры или задан поисковый запрос
+        return Center(
+          child: RefreshIndicator(
+            onRefresh: _loadProducts,
+            color: Theme.of(context).colorScheme.primary,
+            child: ListView(
+              padding: const EdgeInsets.only(bottom: 80),
+              children: const [
+                SizedBox(height: 400),
+                Center(child: Text('По выбранным фильтрам не найдено продукции.')),
+              ],
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        // Если в базе вообще нет данных
+        return Center(
+          child: RefreshIndicator(
+            onRefresh: _loadProducts,
+            color: Theme.of(context).colorScheme.primary,
+            child: ListView(
+              padding: const EdgeInsets.only(bottom: 80),
+              children: [
+                const SizedBox(height: 400),
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Нет продукции. Добавьте новую продукцию.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _showCreateProductDialog,
+                        child: const Text('Добавить продукцию'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
     }
 
     return RefreshIndicator(
       onRefresh: _loadProducts,
       child: ListView.builder(
+        padding: const EdgeInsets.only(bottom: 80),
         itemCount: displayedProducts.length,
         itemBuilder: (context, index) {
           final product = displayedProducts[index];
@@ -901,18 +964,49 @@ class ProductViewState extends State<ProductView> {
         actions: _isSearching
             ? [
           IconButton(
-            icon: const Icon(Icons.close, color: Colors.deepOrange,),
+            icon: const Icon(Icons.close, color: Colors.deepOrange),
             onPressed: _stopSearch,
           ),
         ]
             : [
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.deepOrange,),
+            icon: const Icon(Icons.search, color: Colors.deepOrange),
             onPressed: _searchStub,
           ),
-          IconButton(
-            icon: const Icon(Icons.filter_list, color: Colors.deepOrange,),
-            onPressed: _showFilterDialog,
+          Stack(
+            children: [
+              IconButton(
+                icon: Icon(
+                  _selectedCategoryIds.isNotEmpty ? Icons.filter_alt : Icons.filter_list,
+                  color: Colors.deepOrange,
+                ),
+                onPressed: _showFilterDialog,
+              ),
+              if (_selectedCategoryIds.isNotEmpty)
+                Positioned(
+                  right: 4,
+                  top: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Text(
+                      '${_selectedCategoryIds.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
