@@ -438,8 +438,8 @@ class GroupViewState extends State<GroupView> {
     final isActive = group.groupStatus;
     final text = isActive ? 'Активна' : 'Заблокирована';
     final bgColor = isActive
-        ? theme.colorScheme.secondary.withOpacity(0.1)
-        : theme.colorScheme.error.withOpacity(0.1);
+        ? theme.colorScheme.secondary.withValues(alpha: 0.1)
+        : theme.colorScheme.error.withValues(alpha: 0.1);
     final textColor = isActive ? theme.colorScheme.secondary : theme.colorScheme.error;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

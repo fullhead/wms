@@ -815,8 +815,8 @@ class UserViewState extends State<UserView> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isActive
-            ? primaryColor.withOpacity(0.1)
-            : errorColor.withOpacity(0.1),
+            ? primaryColor.withValues(alpha: 0.1)
+            : errorColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
