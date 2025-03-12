@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:wms/views/auth/authorization_view.dart';
-import 'package:wms/views/dashboard/dashboard_view.dart';
-import 'package:wms/views/group/group_view.dart';
-import 'package:wms/views/user/user_view.dart';
-import 'package:wms/views/category/category_view.dart';
-import 'package:wms/views/product/product_view.dart';
+import 'package:wms/views/authorization_view.dart';
+import 'package:wms/views/dashboard_view.dart';
+import 'package:wms/views/group_view.dart';
+import 'package:wms/views/user_view.dart';
+import 'package:wms/views/category_view.dart';
+import 'package:wms/views/product_view.dart';
 import 'package:wms/views/receive/receive_view.dart';
 import 'package:wms/views/issue/issue_view.dart';
-import 'package:wms/views/warehouse/warehouse_view.dart';
-import 'package:wms/views/cell/cell_view.dart';
+import 'package:wms/views/warehouse_view.dart';
+import 'package:wms/views/cell_view.dart';
 import 'package:wms/views/report/report_view.dart';
-import 'package:wms/views/personalization/personalization_view.dart';
-import 'package:wms/views/splash/splash_screen.dart';
+import 'package:wms/views/personalization_view.dart';
+import 'package:wms/views/splash_screen.dart';
 
 class AppRoutes {
   static const String splash = '/splash';
