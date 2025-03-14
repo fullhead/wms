@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wms/models/cell.dart';
-import 'package:wms/presenters/cell/cell_presenter.dart';
+import 'package:wms/presenters/cell_presenter.dart';
 import 'package:wms/widgets/wms_drawer.dart';
 
 class CellView extends StatefulWidget {

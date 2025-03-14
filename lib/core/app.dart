@@ -78,7 +78,7 @@ class WmsApp extends StatelessWidget {
           trackColor: WidgetStateProperty.resolveWith((states) {
             // Цвет "полоски" переключателя
             if (states.contains(WidgetState.selected)) {
-              return Colors.deepOrange.withOpacity(0.5);
+              return Colors.deepOrange.withValues(alpha: 0.5);
             }
             return Colors.grey;
           }),

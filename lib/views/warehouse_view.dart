@@ -3,7 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:wms/core/constants.dart';
 import 'package:wms/models/warehouse.dart';
-import 'package:wms/presenters/warehouse/warehouse_presenter.dart';
+import 'package:wms/presenters/warehouse_presenter.dart';
 import 'package:wms/widgets/wms_drawer.dart';
 import 'package:wms/core/session/auth_storage.dart';
 import 'package:wms/core/routes.dart';

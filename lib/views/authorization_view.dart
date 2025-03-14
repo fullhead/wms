@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:wms/presenters/auth/authorization_presenter.dart';
+import 'package:wms/presenters/authorization_presenter.dart';
 import 'package:wms/core/routes.dart';
 import 'package:wms/core/utils.dart';
 

@@ -6,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:wms/core/constants.dart';
 import 'package:wms/models/category.dart';
 import 'package:wms/models/product.dart';
-import 'package:wms/presenters/product/product_presenter.dart';
+import 'package:wms/presenters/product_presenter.dart';
 import 'package:wms/core/session/auth_storage.dart';
 import 'package:wms/widgets/wms_drawer.dart';
 

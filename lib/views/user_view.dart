@@ -5,8 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:wms/core/constants.dart';
 import 'package:wms/models/group.dart';
 import 'package:wms/models/user.dart';
-import 'package:wms/presenters/group/group_presenter.dart';
-import 'package:wms/presenters/user/user_presenter.dart';
+import 'package:wms/presenters/group_presenter.dart';
+import 'package:wms/presenters/user_presenter.dart';
 import 'package:wms/core/session/auth_storage.dart';
 import 'package:wms/widgets/wms_drawer.dart';
 

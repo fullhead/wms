@@ -5,7 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:wms/core/constants.dart';
 import 'package:wms/core/routes.dart';
 import 'package:wms/models/user.dart';
-import 'package:wms/presenters/personalization/personalization_presenter.dart';
+import 'package:wms/presenters/personalization_presenter.dart';
 import 'package:wms/core/session/auth_storage.dart';
 
 class WmsDrawer extends StatefulWidget {

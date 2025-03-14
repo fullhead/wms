@@ -2,7 +2,7 @@ import 'package:wms/models/user.dart';
 import 'package:wms/repositories/user_repository.dart';
 import 'package:wms/core/constants.dart';
 import 'package:wms/core/session/session_manager.dart';
-import 'package:wms/presenters/user/user_presenter.dart';
+import 'package:wms/presenters/user_presenter.dart';
 import 'package:wms/core/session/auth_storage.dart';
 
 /// Презентер для управления персональными данными пользователя (профилем).

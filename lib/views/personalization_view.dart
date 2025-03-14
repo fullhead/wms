@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:wms/core/constants.dart';
 import 'package:wms/models/user.dart';
-import 'package:wms/presenters/personalization/personalization_presenter.dart';
+import 'package:wms/presenters/personalization_presenter.dart';
 import 'package:wms/core/session/auth_storage.dart';
 import 'package:wms/widgets/wms_drawer.dart';
 

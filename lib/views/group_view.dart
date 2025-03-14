@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wms/models/group.dart';
-import 'package:wms/presenters/group/group_presenter.dart';
+import 'package:wms/presenters/group_presenter.dart';
 import 'package:wms/core/session/auth_storage.dart';
 import 'package:wms/widgets/wms_drawer.dart';
 

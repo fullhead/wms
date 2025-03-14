@@ -1,5 +1,6 @@
 import 'package:wms/models/product.dart';
 import 'package:wms/models/cell.dart';
+import 'package:wms/core/utils.dart';
 
 /// Модель записи приёмки.
 class Receive {
@@ -26,21 +27,16 @@ class Receive {
       product: product,
       cell: cell,
       receiveQuantity: json['ReceiveQuantity'] ?? 0,
-      receiveDate:
-      DateTime.tryParse(json['ReceiveDate'] ?? '') ?? DateTime.now(),
+      receiveDate: DateTime.tryParse(json['ReceiveDate'] ?? '') ?? DateTime.now(),
     );
   }
 
   /// Преобразует объект Receive в JSON для отправки на сервер.
-  /// Здесь receiveDate форматируется в строку формата "YYYY-MM-DD HH:MM:SS",
+  /// Дата форматируется в строку формата "YYYY-MM-DD HH:MM:SS"
   Map<String, dynamic> toJson() {
-    final formattedDate = "${receiveDate.year.toString().padLeft(4, '0')}-"
-        "${receiveDate.month.toString().padLeft(2, '0')}-"
-        "${receiveDate.day.toString().padLeft(2, '0')} "
-        "${receiveDate.hour.toString().padLeft(2, '0')}:"
-        "${receiveDate.minute.toString().padLeft(2, '0')}:"
-        "${receiveDate.second.toString().padLeft(2, '0')}";
-
+    final formattedDate =
+        '${receiveDate.year}-${twoDigits(receiveDate.month)}-${twoDigits(receiveDate.day)} '
+        '${twoDigits(receiveDate.hour)}:${twoDigits(receiveDate.minute)}:${twoDigits(receiveDate.second)}';
     return {
       'productID': product.productID,
       'cellID': cell.cellID,

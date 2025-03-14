@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wms/models/category.dart';
-import 'package:wms/presenters/category/category_presenter.dart';
+import 'package:wms/presenters/category_presenter.dart';
 import 'package:wms/widgets/wms_drawer.dart';
 
 class CategoryView extends StatefulWidget {

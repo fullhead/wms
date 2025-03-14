@@ -26,12 +26,12 @@ class ReceivePresenter {
 
   /// Получает список всех записей приёмки.
   Future<List<Receive>> fetchAllReceives() async {
-    return await _receiveRepository.getAllReceives();
+    return _receiveRepository.getAllReceives();
   }
 
   /// Получает запись приёмки по её ID.
   Future<Receive> fetchReceiveById(int receiveId) async {
-    return await _receiveRepository.getReceiveById(receiveId);
+    return _receiveRepository.getReceiveById(receiveId);
   }
 
   /// Создает новую запись приёмки.
@@ -48,7 +48,7 @@ class ReceivePresenter {
       receiveQuantity: receiveQuantity,
       receiveDate: receiveDate ?? DateTime.now(),
     );
-    return await _receiveRepository.createReceive(receive);
+    return _receiveRepository.createReceive(receive);
   }
 
   /// Обновляет данные записи приёмки.
@@ -59,15 +59,23 @@ class ReceivePresenter {
         int? receiveQuantity,
         DateTime? receiveDate,
       }) async {
-    if (product != null) receive.product = product;
-    if (cell != null) receive.cell = cell;
-    if (receiveQuantity != null) receive.receiveQuantity = receiveQuantity;
-    if (receiveDate != null) receive.receiveDate = receiveDate;
-    return await _receiveRepository.updateReceive(receive);
+    if (product != null) {
+      receive.product = product;
+    }
+    if (cell != null) {
+      receive.cell = cell;
+    }
+    if (receiveQuantity != null) {
+      receive.receiveQuantity = receiveQuantity;
+    }
+    if (receiveDate != null) {
+      receive.receiveDate = receiveDate;
+    }
+    return _receiveRepository.updateReceive(receive);
   }
 
   /// Удаляет запись приёмки.
   Future<String> deleteReceive(Receive receive) async {
-    return await _receiveRepository.deleteReceive(receive.receiveID);
+    return _receiveRepository.deleteReceive(receive.receiveID);
   }
 }

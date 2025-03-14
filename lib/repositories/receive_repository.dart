@@ -37,12 +37,12 @@ class ReceiveRepository {
     await receiveAPIService.getAllReceives();
     List<Receive> receives = [];
     for (var map in receiveMaps) {
-      int productId = map['ProductID'] ?? 0;
-      int cellId = map['CellID'] ?? 0;
+      final int productId = map['ProductID'] ?? 0;
+      final int cellId = map['CellID'] ?? 0;
       final productMap = await productAPIService.getProductById(productId);
-      int categoryId = productMap['CategoryID'] ?? 0;
+      final int categoryId = productMap['CategoryID'] ?? 0;
       final category = await categoryAPIService.getCategoryById(categoryId);
-      Product product = Product.fromJson(productMap, category);
+      final Product product = Product.fromJson(productMap, category);
       final cell = await cellAPIService.getCellById(cellId);
       receives.add(Receive.fromJson(map, product: product, cell: cell));
     }
@@ -54,12 +54,12 @@ class ReceiveRepository {
     await _sessionManager.validateSession();
     final Map<String, dynamic> receiveMap =
     await receiveAPIService.getReceiveById(receiveId);
-    int productId = receiveMap['ProductID'] ?? 0;
-    int cellId = receiveMap['CellID'] ?? 0;
+    final int productId = receiveMap['ProductID'] ?? 0;
+    final int cellId = receiveMap['CellID'] ?? 0;
     final productMap = await productAPIService.getProductById(productId);
-    int categoryId = productMap['CategoryID'] ?? 0;
+    final int categoryId = productMap['CategoryID'] ?? 0;
     final category = await categoryAPIService.getCategoryById(categoryId);
-    Product product = Product.fromJson(productMap, category);
+    final Product product = Product.fromJson(productMap, category);
     final cell = await cellAPIService.getCellById(cellId);
     return Receive.fromJson(receiveMap, product: product, cell: cell);
   }
