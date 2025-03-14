@@ -191,16 +191,6 @@ class WmsDrawerState extends State<WmsDrawer> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Transform.translate(
-                  offset: const Offset(-5, 0),
-                  child: Image.asset(
-                    'lib/assets/logo.png',
-                    height: 120,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
               const SizedBox(height: 8),
               Row(
                 children: const [
