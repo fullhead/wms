@@ -11,35 +11,30 @@ class SplashScreen extends StatefulWidget {
 }
 
 class SplashScreenState extends State<SplashScreen> {
-  // -------------------------------------------------------
-  // Поля
-  // -------------------------------------------------------
   bool _hasError = false;
   String? _errorMessage;
 
-  // -------------------------------------------------------
-  // Жизненный цикл
-  // -------------------------------------------------------
   @override
   void initState() {
     super.initState();
     _initSplash();
   }
 
-  // -------------------------------------------------------
-  // Инициализация сплеша
-  // -------------------------------------------------------
   Future<void> _initSplash() async {
     try {
-      // Используем getAccessToken() вместо getToken()
       final token = await AuthStorage.getAccessToken();
-      final destinationRoute = (token != null && token.isNotEmpty)
-          ? AppRoutes.dashboard
-          : AppRoutes.authorization;
-
-      // Ждем 4 секунды для воспроизведения анимации
+      String destinationRoute = AppRoutes.authorization;
+      if (token != null && token.isNotEmpty) {
+        final accessLevel = await AuthStorage.getUserGroupLevel();
+        if (accessLevel == '1') {
+          destinationRoute = AppRoutes.users;
+        } else if (accessLevel == '2') {
+          destinationRoute = AppRoutes.receives;
+        } else if (accessLevel == '3') {
+          destinationRoute = AppRoutes.dashboard;
+        }
+      }
       await Future.delayed(const Duration(seconds: 4));
-
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, destinationRoute);
     } catch (error) {
@@ -52,9 +47,6 @@ class SplashScreenState extends State<SplashScreen> {
     }
   }
 
-  // -------------------------------------------------------
-  // Построение экрана
-  // -------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     if (_hasError) {
@@ -75,12 +67,10 @@ class SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
-          // Определяем размер анимации: 50% от меньшей стороны экрана
           final screenWidth = constraints.maxWidth;
           final screenHeight = constraints.maxHeight;
           final animationSize =
               (screenWidth < screenHeight ? screenWidth : screenHeight) * 1;
-
           return Center(
             child: Lottie.asset(
               'lib/assets/logo_splash_animation.json',

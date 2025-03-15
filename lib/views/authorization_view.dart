@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wms/presenters/authorization_presenter.dart';
 import 'package:wms/core/routes.dart';
+import 'package:wms/core/session/auth_storage.dart';
 import 'package:wms/core/utils.dart';
 
 class AuthorizationView extends StatefulWidget {
@@ -15,41 +16,60 @@ class _AuthorizationViewState extends State<AuthorizationView> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // Если AuthorizationPresenter внутри себя использует singleton UserAPIService,
   final _presenter = AuthorizationPresenter();
-
   String? _errorMessage;
   bool _isLoading = false;
 
   Future<void> _login() async {
-    // Убираем фокус при клике на кнопку "Войти"
+    // Убираем фокус со всех полей
     FocusScope.of(context).unfocus();
 
-    if (_formKey.currentState?.validate() ?? false) {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    setState(() {
+      _errorMessage = null;
+      _isLoading = true;
+    });
+
+    try {
+      await _presenter.login(
+        _usernameController.text.trim(),
+        _passwordController.text.trim(),
+      );
+
+      // После успешного входа получаем уровень допуска и перенаправляем
+      final accessLevel = await AuthStorage.getUserGroupLevel();
+      String destinationRoute = AppRoutes.authorization;
+      if (accessLevel == '1') {
+        destinationRoute = AppRoutes.users;
+      }
+      else if (accessLevel == '2') {
+        destinationRoute = AppRoutes.receives;
+      }
+      else if (accessLevel == '3') {
+        destinationRoute = AppRoutes.dashboard;
+      }
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, destinationRoute);
+    } on ApiException catch (apiError) {
       setState(() {
-        _errorMessage = null;
-        _isLoading = true;
+        _errorMessage = apiError.message.isNotEmpty
+            ? apiError.message
+            : 'Ошибка авторизации. Повторите попытку.';
       });
-
-      try {
-        await _presenter.login(
-          _usernameController.text.trim(),
-          _passwordController.text.trim(),
-        );
-
-        if (!mounted) return;
-        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
-      } catch (error) {
-        // Обрабатываем возможные варианты: ApiException или «просто строку»
-        if (error is ApiException) {
-          setState(() => _errorMessage = error.message);
-        } else {
-          setState(() => _errorMessage = error.toString());
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
+      _passwordController.clear();
+    } catch (_) {
+      setState(() {
+        _errorMessage = 'Ошибка авторизации. Повторите попытку.';
+      });
+      _passwordController.clear();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -63,14 +83,13 @@ class _AuthorizationViewState extends State<AuthorizationView> {
 
   @override
   Widget build(BuildContext context) {
-    // Используем LayoutBuilder для адаптивного расчёта отступов
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
           final horizontalPadding =
-          constraints.maxWidth < 600 ? 24.0 : constraints.maxWidth * 0.2;
+              constraints.maxWidth < 600 ? 24.0 : constraints.maxWidth * 0.2;
           final topPadding =
-          constraints.maxWidth < 600 ? 120.0 : constraints.maxWidth * 0.1;
+              constraints.maxWidth < 600 ? 120.0 : constraints.maxWidth * 0.1;
 
           return SingleChildScrollView(
             padding: EdgeInsets.only(
@@ -87,11 +106,10 @@ class _AuthorizationViewState extends State<AuthorizationView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Логотип приложения (PNG) размещается ниже AppBar.
                       Center(
                         child: Image.asset(
                           'lib/assets/logo.png',
-                          height: 150, // оптимальный размер для экрана авторизации
+                          height: 150,
                           fit: BoxFit.contain,
                         ),
                       ),
@@ -105,7 +123,6 @@ class _AuthorizationViewState extends State<AuthorizationView> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      // Отображение ошибки
                       if (_errorMessage != null)
                         Container(
                           margin: const EdgeInsets.only(bottom: 16),
@@ -130,7 +147,6 @@ class _AuthorizationViewState extends State<AuthorizationView> {
                             ],
                           ),
                         ),
-                      // Поле логина
                       TextFormField(
                         controller: _usernameController,
                         decoration: const InputDecoration(
@@ -138,14 +154,13 @@ class _AuthorizationViewState extends State<AuthorizationView> {
                           border: OutlineInputBorder(),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
+                          if (value == null || value.trim().isEmpty) {
                             return 'Введите логин';
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 16),
-                      // Поле пароля
                       TextFormField(
                         controller: _passwordController,
                         decoration: const InputDecoration(
@@ -154,29 +169,29 @@ class _AuthorizationViewState extends State<AuthorizationView> {
                         ),
                         obscureText: true,
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
+                          if (value == null || value.trim().isEmpty) {
                             return 'Введите пароль';
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 24),
-                      // Кнопка входа или индикатор загрузки
                       _isLoading
                           ? const Center(child: CircularProgressIndicator())
                           : SizedBox(
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: _login,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: const Text(
-                            'Войти',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                        ),
-                      ),
+                              height: 48,
+                              child: ElevatedButton(
+                                onPressed: _login,
+                                style: ElevatedButton.styleFrom(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                ),
+                                child: const Text(
+                                  'Войти',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ),
+                            ),
                     ],
                   ),
                 ),

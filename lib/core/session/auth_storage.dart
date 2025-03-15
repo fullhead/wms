@@ -8,6 +8,7 @@ class AuthStorage {
   static const _refreshTokenKey = 'refresh_token';
   static const _userIdKey = 'auth_user_id';
   static const _userGroupIdKey = 'auth_user_group_id';
+  static const _userGroupLevelKey = 'auth_user_group_level';
   static const _userAvatarKey = 'user_avatar';
 
   /// Методы для access token
@@ -49,7 +50,7 @@ class AuthStorage {
     await _storage.delete(key: _userIdKey);
   }
 
-  /// Методы для userUserGroup
+  /// Методы для userGroupID
   static Future<void> saveUserGroup(String groupID) async {
     await _storage.write(key: _userGroupIdKey, value: groupID);
   }
@@ -60,6 +61,19 @@ class AuthStorage {
 
   static Future<void> deleteUserGroup() async {
     await _storage.delete(key: _userGroupIdKey);
+  }
+
+  /// Методы для userGroupLevel (уровень допуска)
+  static Future<void> saveUserGroupLevel(String groupLevel) async {
+    await _storage.write(key: _userGroupLevelKey, value: groupLevel);
+  }
+
+  static Future<String?> getUserGroupLevel() async {
+    return await _storage.read(key: _userGroupLevelKey);
+  }
+
+  static Future<void> deleteUserGroupLevel() async {
+    await _storage.delete(key: _userGroupLevelKey);
   }
 
   /// Методы для URL аватара пользователя
@@ -81,6 +95,7 @@ class AuthStorage {
     await deleteRefreshToken();
     await deleteUserID();
     await deleteUserGroup();
+    await deleteUserGroupLevel();
     await deleteUserAvatar();
   }
 }

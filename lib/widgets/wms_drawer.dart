@@ -18,6 +18,7 @@ class WmsDrawer extends StatefulWidget {
 class WmsDrawerState extends State<WmsDrawer> {
   String? _activeRoute;
   String? _token;
+  String? _userGroupLevel;
   final _personalizationPresenter = PersonalizationPresenter();
   late Future<User?> _currentUserFuture;
   final ScrollController _scrollController = ScrollController();
@@ -26,6 +27,7 @@ class WmsDrawerState extends State<WmsDrawer> {
   void initState() {
     super.initState();
     _loadToken();
+    _loadUserGroupLevel();
     _currentUserFuture = _personalizationPresenter.getCurrentUser();
   }
 
@@ -46,6 +48,11 @@ class WmsDrawerState extends State<WmsDrawer> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _loadUserGroupLevel() async {
+    _userGroupLevel = await AuthStorage.getUserGroupLevel();
+    if (mounted) setState(() {});
+  }
+
   void _handleNavigation(String route) {
     if (_activeRoute == route) {
       Navigator.pop(context);
@@ -60,7 +67,6 @@ class WmsDrawerState extends State<WmsDrawer> {
     Navigator.pushReplacementNamed(context, AppRoutes.authorization);
   }
 
-  // Стилизация пунктов меню:
   TextStyle _menuItemStyle(String route) {
     final isActive = _activeRoute == route;
     return TextStyle(
@@ -109,7 +115,7 @@ class WmsDrawerState extends State<WmsDrawer> {
             return Align(
               alignment: Alignment.bottomLeft,
               child: Text(
-                'Администратор',
+                'Пользователь',
                 style: Theme.of(context)
                     .textTheme
                     .titleLarge
@@ -122,8 +128,11 @@ class WmsDrawerState extends State<WmsDrawer> {
             mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Здесь отображается название группы пользователя, если оно присутствует
               Text(
-                'Администратор',
+                user.userGroup.groupName.isNotEmpty
+                    ? user.userGroup.groupName
+                    : 'Пользователь',
                 style: Theme.of(context)
                     .textTheme
                     .titleLarge
@@ -163,7 +172,7 @@ class WmsDrawerState extends State<WmsDrawer> {
           width: 70,
           height: 70,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.3),
+            color: Colors.white.withOpacity(0.3),
             shape: BoxShape.circle,
           ),
         ),
@@ -171,7 +180,7 @@ class WmsDrawerState extends State<WmsDrawer> {
         Container(
           width: 150,
           height: 20,
-          color: Colors.white.withValues(alpha: 0.3),
+          color: Colors.white.withOpacity(0.3),
         ),
       ],
     );
@@ -296,6 +305,324 @@ class WmsDrawerState extends State<WmsDrawer> {
     );
   }
 
+  // Формирование пунктов меню в зависимости от уровня допуска
+  List<Widget> _buildMenuItems() {
+    List<Widget> items = [];
+    if (_userGroupLevel == '1') {
+      // Уровень 1: полный доступ – отображаем все пункты
+      items.addAll([
+        ListTile(
+          leading: const Icon(Icons.dashboard),
+          title: Text(
+            'Панель управления',
+            style: _menuItemStyle(AppRoutes.dashboard),
+          ),
+          selected: _activeRoute == AppRoutes.dashboard,
+          onTap: () => _handleNavigation(AppRoutes.dashboard),
+        ),
+        ExpansionTile(
+          leading: const Icon(Icons.people_outline),
+          title: const Text(
+            'Все пользователи',
+            style: TextStyle(fontSize: 16),
+          ),
+          initiallyExpanded: _activeRoute == AppRoutes.users ||
+              _activeRoute == AppRoutes.groups,
+          childrenPadding: const EdgeInsets.only(left: 24.0),
+          children: [
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: Text(
+                'Пользователи',
+                style: _subItemStyle(AppRoutes.users),
+              ),
+              selected: _activeRoute == AppRoutes.users,
+              onTap: () => _handleNavigation(AppRoutes.users),
+            ),
+            ListTile(
+              leading: const Icon(Icons.group),
+              title: Text(
+                'Группы',
+                style: _subItemStyle(AppRoutes.groups),
+              ),
+              selected: _activeRoute == AppRoutes.groups,
+              onTap: () => _handleNavigation(AppRoutes.groups),
+            ),
+          ],
+        ),
+        ExpansionTile(
+          leading: const Icon(Icons.inventory),
+          title: const Text(
+            'База продукции',
+            style: TextStyle(fontSize: 16),
+          ),
+          initiallyExpanded: _activeRoute == AppRoutes.products ||
+              _activeRoute == AppRoutes.categories,
+          childrenPadding: const EdgeInsets.only(left: 24.0),
+          children: [
+            ListTile(
+              leading: const Icon(Icons.production_quantity_limits),
+              title: Text(
+                'Все продукции',
+                style: _subItemStyle(AppRoutes.products),
+              ),
+              selected: _activeRoute == AppRoutes.products,
+              onTap: () => _handleNavigation(AppRoutes.products),
+            ),
+            ListTile(
+              leading: const Icon(Icons.category),
+              title: Text(
+                'Категории',
+                style: _subItemStyle(AppRoutes.categories),
+              ),
+              selected: _activeRoute == AppRoutes.categories,
+              onTap: () => _handleNavigation(AppRoutes.categories),
+            ),
+          ],
+        ),
+        ExpansionTile(
+          leading: const Icon(Icons.settings),
+          title: const Text(
+            'Управление запасами',
+            style: TextStyle(fontSize: 16),
+          ),
+          initiallyExpanded: _activeRoute == AppRoutes.receives ||
+              _activeRoute == AppRoutes.issues,
+          childrenPadding: const EdgeInsets.only(left: 24.0),
+          children: [
+            ListTile(
+              leading: const Icon(Icons.call_received),
+              title: Text(
+                'Приемка',
+                style: _subItemStyle(AppRoutes.receives),
+              ),
+              selected: _activeRoute == AppRoutes.receives,
+              onTap: () => _handleNavigation(AppRoutes.receives),
+            ),
+            ListTile(
+              leading: const Icon(Icons.call_made),
+              title: Text(
+                'Выдача',
+                style: _subItemStyle(AppRoutes.issues),
+              ),
+              selected: _activeRoute == AppRoutes.issues,
+              onTap: () => _handleNavigation(AppRoutes.issues),
+            ),
+          ],
+        ),
+        ExpansionTile(
+          leading: const Icon(Icons.account_balance),
+          title: const Text(
+            'Учет запасов',
+            style: TextStyle(fontSize: 16),
+          ),
+          initiallyExpanded: _activeRoute == AppRoutes.warehouse ||
+              _activeRoute == AppRoutes.cells,
+          childrenPadding: const EdgeInsets.only(left: 24.0),
+          children: [
+            ListTile(
+              leading: const Icon(Icons.warehouse),
+              title: Text(
+                'Склад',
+                style: _subItemStyle(AppRoutes.warehouse),
+              ),
+              selected: _activeRoute == AppRoutes.warehouse,
+              onTap: () => _handleNavigation(AppRoutes.warehouse),
+            ),
+            ListTile(
+              leading: const Icon(Icons.view_list),
+              title: Text(
+                'Ячейки',
+                style: _subItemStyle(AppRoutes.cells),
+              ),
+              selected: _activeRoute == AppRoutes.cells,
+              onTap: () => _handleNavigation(AppRoutes.cells),
+            ),
+          ],
+        ),
+        ExpansionTile(
+          leading: const Icon(Icons.insert_chart),
+          title: const Text(
+            'Отчеты',
+            style: TextStyle(fontSize: 16),
+          ),
+          initiallyExpanded: _activeRoute == AppRoutes.receiptReports ||
+              _activeRoute == AppRoutes.issueReports,
+          childrenPadding: const EdgeInsets.only(left: 24.0),
+          children: [
+            ListTile(
+              leading: const Icon(Icons.arrow_downward),
+              title: Text(
+                'Отчеты по приемкам',
+                style: _subItemStyle(AppRoutes.receiptReports),
+              ),
+              selected: _activeRoute == AppRoutes.receiptReports,
+              onTap: () => _handleNavigation(AppRoutes.receiptReports),
+            ),
+            ListTile(
+              leading: const Icon(Icons.arrow_upward),
+              title: Text(
+                'Отчеты по выдачам',
+                style: _subItemStyle(AppRoutes.issueReports),
+              ),
+              selected: _activeRoute == AppRoutes.issueReports,
+              onTap: () => _handleNavigation(AppRoutes.issueReports),
+            ),
+          ],
+        ),
+        ListTile(
+          leading: const Icon(Icons.person_pin),
+          title: Text(
+            'Персонализация',
+            style: _menuItemStyle(AppRoutes.personalization),
+          ),
+          selected: _activeRoute == AppRoutes.personalization,
+          onTap: () => _handleNavigation(AppRoutes.personalization),
+        ),
+      ]);
+    }
+    else if (_userGroupLevel == '2') {
+      // Уровень 2: доступно управление запасами и учет запасов, персонализация, выйти
+      items.addAll([
+        ExpansionTile(
+          leading: const Icon(Icons.settings),
+          title: const Text(
+            'Управление запасами',
+            style: TextStyle(fontSize: 16),
+          ),
+          initiallyExpanded: _activeRoute == AppRoutes.receives ||
+              _activeRoute == AppRoutes.issues,
+          childrenPadding: const EdgeInsets.only(left: 24.0),
+          children: [
+            ListTile(
+              leading: const Icon(Icons.call_received),
+              title: Text(
+                'Приемка',
+                style: _subItemStyle(AppRoutes.receives),
+              ),
+              selected: _activeRoute == AppRoutes.receives,
+              onTap: () => _handleNavigation(AppRoutes.receives),
+            ),
+            ListTile(
+              leading: const Icon(Icons.call_made),
+              title: Text(
+                'Выдача',
+                style: _subItemStyle(AppRoutes.issues),
+              ),
+              selected: _activeRoute == AppRoutes.issues,
+              onTap: () => _handleNavigation(AppRoutes.issues),
+            ),
+          ],
+        ),
+        ExpansionTile(
+          leading: const Icon(Icons.account_balance),
+          title: const Text(
+            'Учет запасов',
+            style: TextStyle(fontSize: 16),
+          ),
+          initiallyExpanded: _activeRoute == AppRoutes.warehouse ||
+              _activeRoute == AppRoutes.cells,
+          childrenPadding: const EdgeInsets.only(left: 24.0),
+          children: [
+            ListTile(
+              leading: const Icon(Icons.warehouse),
+              title: Text(
+                'Склад',
+                style: _subItemStyle(AppRoutes.warehouse),
+              ),
+              selected: _activeRoute == AppRoutes.warehouse,
+              onTap: () => _handleNavigation(AppRoutes.warehouse),
+            ),
+            ListTile(
+              leading: const Icon(Icons.view_list),
+              title: Text(
+                'Ячейки',
+                style: _subItemStyle(AppRoutes.cells),
+              ),
+              selected: _activeRoute == AppRoutes.cells,
+              onTap: () => _handleNavigation(AppRoutes.cells),
+            ),
+          ],
+        ),
+        ListTile(
+          leading: const Icon(Icons.person_pin),
+          title: Text(
+            'Персонализация',
+            style: _menuItemStyle(AppRoutes.personalization),
+          ),
+          selected: _activeRoute == AppRoutes.personalization,
+          onTap: () => _handleNavigation(AppRoutes.personalization),
+        ),
+      ]);
+    }
+    else if (_userGroupLevel == '3') {
+      // Уровень 3: доступно панель управления, отчеты, персонализация, выйти
+      items.addAll([
+        ListTile(
+          leading: const Icon(Icons.dashboard),
+          title: Text(
+            'Панель управления',
+            style: _menuItemStyle(AppRoutes.dashboard),
+          ),
+          selected: _activeRoute == AppRoutes.dashboard,
+          onTap: () => _handleNavigation(AppRoutes.dashboard),
+        ),
+        ExpansionTile(
+          leading: const Icon(Icons.insert_chart),
+          title: const Text(
+            'Отчеты',
+            style: TextStyle(fontSize: 16),
+          ),
+          initiallyExpanded: _activeRoute == AppRoutes.receiptReports ||
+              _activeRoute == AppRoutes.issueReports,
+          childrenPadding: const EdgeInsets.only(left: 24.0),
+          children: [
+            ListTile(
+              leading: const Icon(Icons.arrow_downward),
+              title: Text(
+                'Отчеты по приемкам',
+                style: _subItemStyle(AppRoutes.receiptReports),
+              ),
+              selected: _activeRoute == AppRoutes.receiptReports,
+              onTap: () => _handleNavigation(AppRoutes.receiptReports),
+            ),
+            ListTile(
+              leading: const Icon(Icons.arrow_upward),
+              title: Text(
+                'Отчеты по выдачам',
+                style: _subItemStyle(AppRoutes.issueReports),
+              ),
+              selected: _activeRoute == AppRoutes.issueReports,
+              onTap: () => _handleNavigation(AppRoutes.issueReports),
+            ),
+          ],
+        ),
+        ListTile(
+          leading: const Icon(Icons.person_pin),
+          title: Text(
+            'Персонализация',
+            style: _menuItemStyle(AppRoutes.personalization),
+          ),
+          selected: _activeRoute == AppRoutes.personalization,
+          onTap: () => _handleNavigation(AppRoutes.personalization),
+        ),
+      ]);
+    }
+    // Всегда добавляем пункт "Выйти"
+    items.add(
+      ListTile(
+        leading: const Icon(Icons.exit_to_app),
+        title: const Text(
+          'Выйти',
+          style: TextStyle(fontWeight: FontWeight.normal, color: Colors.black),
+        ),
+        onTap: _logout,
+      ),
+    );
+
+    return items;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -303,198 +630,14 @@ class WmsDrawerState extends State<WmsDrawer> {
         children: [
           _buildDrawerHeader(),
           Expanded(
-            child: Column(
-              children: [
-                Flexible(
-                  child: Scrollbar(
-                    thumbVisibility: true,
-                    controller: _scrollController,
-                    child: ListView(
-                      controller: _scrollController,
-                      padding: EdgeInsets.zero,
-                      children: [
-                        ListTile(
-                          leading: const Icon(Icons.dashboard),
-                          title: Text(
-                            'Панель управления',
-                            style: _menuItemStyle(AppRoutes.dashboard),
-                          ),
-                          selected: _activeRoute == AppRoutes.dashboard,
-                          onTap: () => _handleNavigation(AppRoutes.dashboard),
-                        ),
-                        ExpansionTile(
-                          leading: const Icon(Icons.people_outline),
-                          title: const Text(
-                            'Все пользователи',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          initiallyExpanded: _activeRoute == AppRoutes.users ||
-                              _activeRoute == AppRoutes.groups,
-                          childrenPadding: const EdgeInsets.only(left: 24.0),
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.person),
-                              title: Text(
-                                'Пользователи',
-                                style: _subItemStyle(AppRoutes.users),
-                              ),
-                              selected: _activeRoute == AppRoutes.users,
-                              onTap: () => _handleNavigation(AppRoutes.users),
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.group),
-                              title: Text(
-                                'Группы',
-                                style: _subItemStyle(AppRoutes.groups),
-                              ),
-                              selected: _activeRoute == AppRoutes.groups,
-                              onTap: () => _handleNavigation(AppRoutes.groups),
-                            ),
-                          ],
-                        ),
-                        ExpansionTile(
-                          leading: const Icon(Icons.inventory),
-                          title: const Text(
-                            'База продукции',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          initiallyExpanded: _activeRoute == AppRoutes.products ||
-                              _activeRoute == AppRoutes.categories,
-                          childrenPadding: const EdgeInsets.only(left: 24.0),
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.production_quantity_limits),
-                              title: Text(
-                                'Все продукции',
-                                style: _subItemStyle(AppRoutes.products),
-                              ),
-                              selected: _activeRoute == AppRoutes.products,
-                              onTap: () => _handleNavigation(AppRoutes.products),
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.category),
-                              title: Text(
-                                'Категории',
-                                style: _subItemStyle(AppRoutes.categories),
-                              ),
-                              selected: _activeRoute == AppRoutes.categories,
-                              onTap: () => _handleNavigation(AppRoutes.categories),
-                            ),
-                          ],
-                        ),
-                        ExpansionTile(
-                          leading: const Icon(Icons.settings),
-                          title: const Text(
-                            'Управление запасами',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          initiallyExpanded: _activeRoute == AppRoutes.receives ||
-                              _activeRoute == AppRoutes.issues,
-                          childrenPadding: const EdgeInsets.only(left: 24.0),
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.call_received),
-                              title: Text(
-                                'Приемка',
-                                style: _subItemStyle(AppRoutes.receives),
-                              ),
-                              selected: _activeRoute == AppRoutes.receives,
-                              onTap: () => _handleNavigation(AppRoutes.receives),
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.call_made),
-                              title: Text(
-                                'Выдача',
-                                style: _subItemStyle(AppRoutes.issues),
-                              ),
-                              selected: _activeRoute == AppRoutes.issues,
-                              onTap: () => _handleNavigation(AppRoutes.issues),
-                            ),
-                          ],
-                        ),
-                        ExpansionTile(
-                          leading: const Icon(Icons.account_balance),
-                          title: const Text(
-                            'Учет запасов',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          initiallyExpanded: _activeRoute == AppRoutes.warehouse ||
-                              _activeRoute == AppRoutes.cells,
-                          childrenPadding: const EdgeInsets.only(left: 24.0),
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.warehouse),
-                              title: Text(
-                                'Склад',
-                                style: _subItemStyle(AppRoutes.warehouse),
-                              ),
-                              selected: _activeRoute == AppRoutes.warehouse,
-                              onTap: () => _handleNavigation(AppRoutes.warehouse),
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.view_list),
-                              title: Text(
-                                'Ячейки',
-                                style: _subItemStyle(AppRoutes.cells),
-                              ),
-                              selected: _activeRoute == AppRoutes.cells,
-                              onTap: () => _handleNavigation(AppRoutes.cells),
-                            ),
-                          ],
-                        ),
-                        ExpansionTile(
-                          leading: const Icon(Icons.insert_chart),
-                          title: const Text(
-                            'Отчеты',
-                            style: TextStyle(fontSize: 16),
-                          ),
-                          initiallyExpanded: _activeRoute == AppRoutes.receiptReports ||
-                              _activeRoute == AppRoutes.issueReports,
-                          childrenPadding: const EdgeInsets.only(left: 24.0),
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.arrow_downward),
-                              title: Text(
-                                'Отчеты по приемкам',
-                                style: _subItemStyle(AppRoutes.receiptReports),
-                              ),
-                              selected: _activeRoute == AppRoutes.receiptReports,
-                              onTap: () => _handleNavigation(AppRoutes.receiptReports),
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.arrow_upward),
-                              title: Text(
-                                'Отчеты по выдачам',
-                                style: _subItemStyle(AppRoutes.issueReports),
-                              ),
-                              selected: _activeRoute == AppRoutes.issueReports,
-                              onTap: () => _handleNavigation(AppRoutes.issueReports),
-                            ),
-                          ],
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.person_pin),
-                          title: Text(
-                            'Персонализация',
-                            style: _menuItemStyle(AppRoutes.personalization),
-                          ),
-                          selected: _activeRoute == AppRoutes.personalization,
-                          onTap: () => _handleNavigation(AppRoutes.personalization),
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.exit_to_app),
-                          title: const Text(
-                            'Выйти',
-                            style: TextStyle(fontWeight: FontWeight.normal, color: Colors.black),
-                          ),
-                          onTap: _logout,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-              ],
+            child: Scrollbar(
+              thumbVisibility: true,
+              controller: _scrollController,
+              child: ListView(
+                controller: _scrollController,
+                padding: EdgeInsets.zero,
+                children: _buildMenuItems(),
+              ),
             ),
           ),
           _buildDrawerFooter(),

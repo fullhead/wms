@@ -65,7 +65,8 @@ class GroupViewState extends State<GroupView> {
 
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: group?.groupName ?? '');
-    final levelController = TextEditingController(text: group?.groupAccessLevel ?? '1');
+    // Начальное значение уровня доступа (по умолчанию "1", если group == null)
+    String selectedAccessLevel = group?.groupAccessLevel ?? '1';
     bool status = group?.groupStatus ?? true;
 
     if (!mounted) return;
@@ -89,6 +90,7 @@ class GroupViewState extends State<GroupView> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Поле ввода названия
                       TextFormField(
                         controller: nameController,
                         decoration: const InputDecoration(
@@ -102,19 +104,42 @@ class GroupViewState extends State<GroupView> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      TextFormField(
-                        controller: levelController,
+                      // Для выбора уровня доступа (1, 2, 3)
+                      DropdownButtonFormField<String>(
+                        value: selectedAccessLevel,
                         decoration: const InputDecoration(
                           labelText: 'Уровень доступа',
                         ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: '1',
+                            child: Text('Уровень 1'),
+                          ),
+                          DropdownMenuItem(
+                            value: '2',
+                            child: Text('Уровень 2'),
+                          ),
+                          DropdownMenuItem(
+                            value: '3',
+                            child: Text('Уровень 3'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setStateDialog(() {
+                              selectedAccessLevel = value;
+                            });
+                          }
+                        },
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Введите уровень доступа';
+                          if (value == null || value.isEmpty) {
+                            return 'Выберите уровень доступа';
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 8),
+                      // Переключатель статуса
                       SwitchListTile(
                         title: const Text('Статус'),
                         value: status,
@@ -148,7 +173,7 @@ class GroupViewState extends State<GroupView> {
                   onPressed: () async {
                     if (!formKey.currentState!.validate()) return;
                     final name = nameController.text.trim();
-                    final level = levelController.text.trim();
+                    final level = selectedAccessLevel.trim();
                     try {
                       String responseMessage;
                       if (group == null) {
