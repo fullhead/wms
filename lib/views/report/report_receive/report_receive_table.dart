@@ -144,7 +144,7 @@ class ReportReceiveTableState extends State<ReportReceiveTable> {
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 390),
+              constraints: const BoxConstraints(minWidth: 445),
               child: DataTable(
                 columnSpacing: columnSpacing,
                 horizontalMargin: horizontalMargin,
