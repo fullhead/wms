@@ -8,8 +8,7 @@ class AuthorizationPresenter {
   final UserAPIService _userAPIService;
 
   AuthorizationPresenter({UserAPIService? userAPIService})
-      : _userAPIService =
-            userAPIService ?? UserAPIService(baseUrl: AppConstants.apiBaseUrl);
+      : _userAPIService = userAPIService ?? UserAPIService(baseUrl: AppConstants.apiBaseUrl);
 
   Future<void> login(String username, String password) async {
     final credentials = {'username': username, 'password': password};
@@ -21,8 +20,7 @@ class AuthorizationPresenter {
       }
 
       // Ожидаем наличие accessToken и refreshToken в ответе
-      if (response.containsKey('accessToken') &&
-          response.containsKey('refreshToken')) {
+      if (response.containsKey('accessToken') && response.containsKey('refreshToken')) {
         final accessToken = response['accessToken'] as String;
         final refreshToken = response['refreshToken'] as String;
         await AuthStorage.saveAccessToken(accessToken);

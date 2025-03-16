@@ -1,5 +1,3 @@
-// receive_dialogs.dart
-
 import 'package:barcode_scan2/barcode_scan2.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +27,8 @@ class ReceiveDialogs {
     required ProductPresenter productPresenter,
     String? token,
   }) async {
+    final ScrollController productScrollController = ScrollController();
+
     List<Product> products = [];
     String searchQuery = '';
     bool isLoading = true;
@@ -49,10 +49,16 @@ class ReceiveDialogs {
                 });
               });
             }
+
             List<Product> displayedProducts = products.where((p) {
-              return p.productName.toLowerCase().contains(searchQuery.toLowerCase()) ||
-                  p.productBarcode.toLowerCase().contains(searchQuery.toLowerCase());
+              return p.productName
+                      .toLowerCase()
+                      .contains(searchQuery.toLowerCase()) ||
+                  p.productBarcode
+                      .toLowerCase()
+                      .contains(searchQuery.toLowerCase());
             }).toList();
+
             return AlertDialog(
               title: Row(
                 children: [
@@ -64,7 +70,8 @@ class ReceiveDialogs {
                       padding: EdgeInsets.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    icon: const Icon(Icons.camera_alt, color: Colors.deepOrange, size: 24),
+                    icon: const Icon(Icons.camera_alt,
+                        color: Colors.deepOrange, size: 24),
                     onPressed: () async {
                       final scanned = await _scanBarcode();
                       if (scanned != null) {
@@ -82,31 +89,36 @@ class ReceiveDialogs {
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : Scrollbar(
-                  thumbVisibility: true,
-                  child: ListView.builder(
-                    itemCount: displayedProducts.length,
-                    itemBuilder: (ctx, index) {
-                      final product = displayedProducts[index];
-                      return ListTile(
-                        leading: ClipRRect(
-                          borderRadius: BorderRadius.circular(8.0),
-                          child: CachedNetworkImage(
-                            imageUrl: AppConstants.apiBaseUrl + product.productImage,
-                            httpHeaders: token != null ? {"Authorization": "Bearer $token"} : {},
-                            width: 50,
-                            height: 50,
-                            fit: BoxFit.cover,
-                          ),
+                        thumbVisibility: true,
+                        controller: productScrollController,
+                        child: ListView.builder(
+                          controller: productScrollController,
+                          itemCount: displayedProducts.length,
+                          itemBuilder: (ctx, index) {
+                            final product = displayedProducts[index];
+                            return ListTile(
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(8.0),
+                                child: CachedNetworkImage(
+                                  imageUrl: AppConstants.apiBaseUrl +
+                                      product.productImage,
+                                  httpHeaders: token != null
+                                      ? {"Authorization": "Bearer $token"}
+                                      : {},
+                                  width: 50,
+                                  height: 50,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              title: Text(product.productName),
+                              subtitle: Text(product.productBarcode),
+                              onTap: () {
+                                Navigator.pop(context, product);
+                              },
+                            );
+                          },
                         ),
-                        title: Text(product.productName),
-                        subtitle: Text(product.productBarcode),
-                        onTap: () {
-                          Navigator.pop(context, product);
-                        },
-                      );
-                    },
-                  ),
-                ),
+                      ),
               ),
               actions: [
                 TextButton(
@@ -126,9 +138,12 @@ class ReceiveDialogs {
     required BuildContext context,
     required CellPresenter cellPresenter,
   }) async {
+    final ScrollController cellScrollController = ScrollController();
+
     List<Cell> cells = [];
     String searchQuery = '';
     bool isLoading = true;
+
     return showDialog<Cell>(
       context: context,
       builder: (dialogContext) {
@@ -146,9 +161,13 @@ class ReceiveDialogs {
                 });
               });
             }
+
             List<Cell> displayedCells = cells.where((c) {
-              return c.cellName.toLowerCase().contains(searchQuery.toLowerCase());
+              return c.cellName
+                  .toLowerCase()
+                  .contains(searchQuery.toLowerCase());
             }).toList();
+
             return AlertDialog(
               title: const Text("Выберите ячейку"),
               content: SizedBox(
@@ -157,20 +176,22 @@ class ReceiveDialogs {
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : Scrollbar(
-                  thumbVisibility: true,
-                  child: ListView.builder(
-                    itemCount: displayedCells.length,
-                    itemBuilder: (ctx, index) {
-                      final cell = displayedCells[index];
-                      return ListTile(
-                        title: Text(cell.cellName),
-                        onTap: () {
-                          Navigator.pop(context, cell);
-                        },
-                      );
-                    },
-                  ),
-                ),
+                        thumbVisibility: true,
+                        controller: cellScrollController,
+                        child: ListView.builder(
+                          controller: cellScrollController,
+                          itemCount: displayedCells.length,
+                          itemBuilder: (ctx, index) {
+                            final cell = displayedCells[index];
+                            return ListTile(
+                              title: Text(cell.cellName),
+                              onTap: () {
+                                Navigator.pop(context, cell);
+                              },
+                            );
+                          },
+                        ),
+                      ),
               ),
               actions: [
                 TextButton(
@@ -186,15 +207,28 @@ class ReceiveDialogs {
   }
 
   /// Виджет для построения строки деталей записи.
-  static Widget _buildDetailRow(ThemeData theme, IconData icon, String label, String value) {
+  static Widget _buildDetailRow(
+    ThemeData theme,
+    IconData icon,
+    String label,
+    String value,
+  ) {
     return Row(
       children: [
         Icon(icon, color: Colors.deepOrange, size: 16),
         const SizedBox(width: 4),
-        Text(label, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style:
+              theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
         const SizedBox(width: 4),
         Flexible(
-          child: Text(value, style: theme.textTheme.bodyMedium, overflow: TextOverflow.ellipsis),
+          child: Text(
+            value,
+            style: theme.textTheme.bodyMedium,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );
@@ -218,6 +252,7 @@ class ReceiveDialogs {
         final dialogWidth = isDesktop ? size.width * 0.4 : size.width * 0.9;
         final dialogHeight = size.height * 0.65;
         final imageSize = isDesktop ? 650.0 : 350.0;
+
         return AlertDialog(
           insetPadding: EdgeInsets.zero,
           contentPadding: const EdgeInsets.all(10),
@@ -229,7 +264,8 @@ class ReceiveDialogs {
                   padding: const EdgeInsets.only(left: 16.0),
                   child: Text(
                     receive.product.productName,
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -257,8 +293,11 @@ class ReceiveDialogs {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8.0),
                             child: CachedNetworkImage(
-                              imageUrl: AppConstants.apiBaseUrl + receive.product.productImage,
-                              httpHeaders: token != null ? {"Authorization": "Bearer $token"} : {},
+                              imageUrl: AppConstants.apiBaseUrl +
+                                  receive.product.productImage,
+                              httpHeaders: token != null
+                                  ? {"Authorization": "Bearer $token"}
+                                  : {},
                               width: imageSize,
                               height: imageSize,
                               fit: BoxFit.cover,
@@ -267,13 +306,17 @@ class ReceiveDialogs {
                         ),
                         const SizedBox(height: 20),
                         const Divider(height: 20),
-                        _buildDetailRow(theme, Icons.qr_code, "Штрихкод:", receive.product.productBarcode),
+                        _buildDetailRow(theme, Icons.qr_code, "Штрихкод:",
+                            receive.product.productBarcode),
                         const Divider(height: 20),
-                        _buildDetailRow(theme, Icons.location_on, "Ячейка:", receive.cell.cellName),
+                        _buildDetailRow(theme, Icons.location_on, "Ячейка:",
+                            receive.cell.cellName),
                         const Divider(height: 20),
-                        _buildDetailRow(theme, Icons.confirmation_number, "Количество:", receive.receiveQuantity.toString()),
+                        _buildDetailRow(theme, Icons.confirmation_number,
+                            "Количество:", receive.receiveQuantity.toString()),
                         const Divider(height: 20),
-                        _buildDetailRow(theme, Icons.calendar_today, "Дата:", formatDateTime(receive.receiveDate)),
+                        _buildDetailRow(theme, Icons.calendar_today, "Дата:",
+                            formatDateTime(receive.receiveDate)),
                         const Divider(height: 20),
                       ],
                     ),
@@ -284,15 +327,18 @@ class ReceiveDialogs {
                         children: [
                           TextButton.icon(
                             onPressed: onEdit,
-                            icon: Icon(Icons.edit, color: theme.colorScheme.secondary),
+                            icon: Icon(Icons.edit,
+                                color: theme.colorScheme.secondary),
                             label: Text(
                               "Редактировать",
-                              style: TextStyle(color: theme.colorScheme.secondary),
+                              style:
+                                  TextStyle(color: theme.colorScheme.secondary),
                             ),
                           ),
                           TextButton.icon(
                             onPressed: onDelete,
-                            icon: Icon(Icons.delete, color: theme.colorScheme.error),
+                            icon: Icon(Icons.delete,
+                                color: theme.colorScheme.error),
                             label: Text(
                               "Удалить",
                               style: TextStyle(color: theme.colorScheme.error),
@@ -335,17 +381,22 @@ class ReceiveDialogs {
             return AlertDialog(
               insetPadding: EdgeInsets.zero,
               contentPadding: const EdgeInsets.all(10),
-              title: Text("Редактировать запись приёмки", style: Theme.of(dialogContext).textTheme.titleMedium),
+              title: Text(
+                "Редактировать запись приёмки",
+                style: Theme.of(dialogContext).textTheme.titleMedium,
+              ),
               content: SizedBox(
                 width: MediaQuery.of(dialogContext).size.width *
-                    (MediaQuery.of(dialogContext).size.width > 800 ? 0.5 : 0.95),
+                    (MediaQuery.of(dialogContext).size.width > 800
+                        ? 0.5
+                        : 0.95),
                 child: SingleChildScrollView(
                   child: Form(
                     key: formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Поле выбора продукции с валидатором.
+                        // Поле выбора продукции
                         FormField<Product>(
                           initialValue: selectedProduct,
                           validator: (value) {
@@ -358,11 +409,17 @@ class ReceiveDialogs {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text("Продукция", style: Theme.of(dialogContext).textTheme.titleMedium),
+                                Text(
+                                  "Продукция",
+                                  style: Theme.of(dialogContext)
+                                      .textTheme
+                                      .titleMedium,
+                                ),
                                 const SizedBox(height: 8),
                                 InkWell(
                                   onTap: () async {
-                                    final product = await showProductSelectionDialog(
+                                    final product =
+                                        await showProductSelectionDialog(
                                       context: dialogContext,
                                       productPresenter: productPresenter,
                                       token: token,
@@ -383,17 +440,26 @@ class ReceiveDialogs {
                                     child: Row(
                                       children: [
                                         ClipRRect(
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                              BorderRadius.circular(8.0),
                                           child: CachedNetworkImage(
-                                            imageUrl: AppConstants.apiBaseUrl + selectedProduct.productImage,
-                                            httpHeaders: token != null ? {"Authorization": "Bearer $token"} : {},
+                                            imageUrl: AppConstants.apiBaseUrl +
+                                                selectedProduct.productImage,
+                                            httpHeaders: token != null
+                                                ? {
+                                                    "Authorization":
+                                                        "Bearer $token"
+                                                  }
+                                                : {},
                                             width: 50,
                                             height: 50,
                                             fit: BoxFit.cover,
                                           ),
                                         ),
                                         const SizedBox(width: 10),
-                                        Expanded(child: Text(selectedProduct.productName)),
+                                        Expanded(
+                                            child: Text(
+                                                selectedProduct.productName)),
                                         const Icon(Icons.arrow_drop_down),
                                       ],
                                     ),
@@ -412,7 +478,7 @@ class ReceiveDialogs {
                           },
                         ),
                         const SizedBox(height: 16),
-                        // Поле выбора ячейки с валидатором.
+                        // Поле выбора ячейки
                         FormField<Cell>(
                           initialValue: selectedCell,
                           validator: (value) {
@@ -425,7 +491,12 @@ class ReceiveDialogs {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text("Ячейка", style: Theme.of(dialogContext).textTheme.titleMedium),
+                                Text(
+                                  "Ячейка",
+                                  style: Theme.of(dialogContext)
+                                      .textTheme
+                                      .titleMedium,
+                                ),
                                 const SizedBox(height: 8),
                                 InkWell(
                                   onTap: () async {
@@ -448,7 +519,8 @@ class ReceiveDialogs {
                                     ),
                                     child: Row(
                                       children: [
-                                        Expanded(child: Text(selectedCell.cellName)),
+                                        Expanded(
+                                            child: Text(selectedCell.cellName)),
                                         const Icon(Icons.arrow_drop_down),
                                       ],
                                     ),
@@ -467,15 +539,18 @@ class ReceiveDialogs {
                           },
                         ),
                         const SizedBox(height: 16),
+                        // Поле для ввода количества
                         TextFormField(
                           initialValue: quantityStr,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: "Количество"),
+                          decoration:
+                              const InputDecoration(labelText: "Количество"),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return "Введите количество";
                             }
-                            if (int.tryParse(value) == null || int.parse(value) <= 0) {
+                            if (int.tryParse(value) == null ||
+                                int.parse(value) <= 0) {
                               return "Количество должно быть положительным числом";
                             }
                             return null;
@@ -485,9 +560,12 @@ class ReceiveDialogs {
                           },
                         ),
                         const SizedBox(height: 16),
+                        // Выбор даты
                         Row(
                           children: [
-                            Expanded(child: Text("Дата: ${formatDate(selectedDate)}")),
+                            Expanded(
+                                child:
+                                    Text("Дата: ${formatDate(selectedDate)}")),
                             TextButton(
                               onPressed: () async {
                                 final pickedDate = await showDatePicker(
@@ -513,14 +591,18 @@ class ReceiveDialogs {
                             ),
                           ],
                         ),
+                        // Выбор времени
                         Row(
                           children: [
-                            Expanded(child: Text("Время: ${formatTime(selectedDate)}")),
+                            Expanded(
+                                child:
+                                    Text("Время: ${formatTime(selectedDate)}")),
                             TextButton(
                               onPressed: () async {
                                 final pickedTime = await showTimePicker(
                                   context: dialogContext,
-                                  initialTime: TimeOfDay.fromDateTime(selectedDate),
+                                  initialTime:
+                                      TimeOfDay.fromDateTime(selectedDate),
                                 );
                                 if (pickedTime != null) {
                                   setStateDialog(() {
@@ -558,9 +640,10 @@ class ReceiveDialogs {
                         receive.product = selectedProduct;
                         receive.cell = selectedCell;
                         receive.receiveQuantity = updatedQuantity;
-                        // Передаём выбранное время без дополнительного преобразования.
                         receive.receiveDate = selectedDate;
-                        final responseMessage = await ReceivePresenter().updateReceive(receive);
+
+                        final responseMessage =
+                            await ReceivePresenter().updateReceive(receive);
                         if (Navigator.canPop(dialogContext)) {
                           Navigator.of(dialogContext).pop();
                         }
@@ -618,17 +701,22 @@ class ReceiveDialogs {
             return AlertDialog(
               insetPadding: EdgeInsets.zero,
               contentPadding: const EdgeInsets.all(10),
-              title: Text("Создать запись приёмки", style: Theme.of(dialogContext).textTheme.titleMedium),
+              title: Text(
+                "Создать запись приёмки",
+                style: Theme.of(dialogContext).textTheme.titleMedium,
+              ),
               content: SizedBox(
                 width: MediaQuery.of(dialogContext).size.width *
-                    (MediaQuery.of(dialogContext).size.width > 800 ? 0.5 : 0.95),
+                    (MediaQuery.of(dialogContext).size.width > 800
+                        ? 0.5
+                        : 0.95),
                 child: SingleChildScrollView(
                   child: Form(
                     key: formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Поле выбора продукции с валидатором.
+                        // Поле выбора продукции
                         FormField<Product>(
                           validator: (value) {
                             if (value == null) {
@@ -640,11 +728,17 @@ class ReceiveDialogs {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text("Продукция", style: Theme.of(dialogContext).textTheme.titleMedium),
+                                Text(
+                                  "Продукция",
+                                  style: Theme.of(dialogContext)
+                                      .textTheme
+                                      .titleMedium,
+                                ),
                                 const SizedBox(height: 8),
                                 InkWell(
                                   onTap: () async {
-                                    final product = await showProductSelectionDialog(
+                                    final product =
+                                        await showProductSelectionDialog(
                                       context: dialogContext,
                                       productPresenter: productPresenter,
                                       token: token,
@@ -666,10 +760,18 @@ class ReceiveDialogs {
                                       children: [
                                         if (selectedProduct != null)
                                           ClipRRect(
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                                BorderRadius.circular(8.0),
                                             child: CachedNetworkImage(
-                                              imageUrl: AppConstants.apiBaseUrl + selectedProduct!.productImage,
-                                              httpHeaders: token != null ? {"Authorization": "Bearer $token"} : {},
+                                              imageUrl: AppConstants
+                                                      .apiBaseUrl +
+                                                  selectedProduct!.productImage,
+                                              httpHeaders: token != null
+                                                  ? {
+                                                      "Authorization":
+                                                          "Bearer $token"
+                                                    }
+                                                  : {},
                                               width: 50,
                                               height: 50,
                                               fit: BoxFit.cover,
@@ -684,8 +786,10 @@ class ReceiveDialogs {
                                         const SizedBox(width: 10),
                                         Expanded(
                                           child: Text(
-                                            selectedProduct?.productName ?? "Выберите продукцию",
-                                            style: const TextStyle(fontSize: 16),
+                                            selectedProduct?.productName ??
+                                                "Выберите продукцию",
+                                            style:
+                                                const TextStyle(fontSize: 16),
                                           ),
                                         ),
                                         const Icon(Icons.arrow_drop_down),
@@ -706,7 +810,7 @@ class ReceiveDialogs {
                           },
                         ),
                         const SizedBox(height: 16),
-                        // Поле выбора ячейки с валидатором.
+                        // Поле выбора ячейки
                         FormField<Cell>(
                           validator: (value) {
                             if (value == null) {
@@ -718,7 +822,12 @@ class ReceiveDialogs {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text("Ячейка", style: Theme.of(dialogContext).textTheme.titleMedium),
+                                Text(
+                                  "Ячейка",
+                                  style: Theme.of(dialogContext)
+                                      .textTheme
+                                      .titleMedium,
+                                ),
                                 const SizedBox(height: 8),
                                 InkWell(
                                   onTap: () async {
@@ -743,8 +852,10 @@ class ReceiveDialogs {
                                       children: [
                                         Expanded(
                                           child: Text(
-                                            selectedCell?.cellName ?? "Выберите ячейку",
-                                            style: const TextStyle(fontSize: 16),
+                                            selectedCell?.cellName ??
+                                                "Выберите ячейку",
+                                            style:
+                                                const TextStyle(fontSize: 16),
                                           ),
                                         ),
                                         const Icon(Icons.arrow_drop_down),
@@ -765,14 +876,17 @@ class ReceiveDialogs {
                           },
                         ),
                         const SizedBox(height: 16),
+                        // Поле ввода количества
                         TextFormField(
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: "Количество"),
+                          decoration:
+                              const InputDecoration(labelText: "Количество"),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return "Введите количество";
                             }
-                            if (int.tryParse(value) == null || int.parse(value) <= 0) {
+                            if (int.tryParse(value) == null ||
+                                int.parse(value) <= 0) {
                               return "Количество должно быть положительным числом";
                             }
                             return null;
@@ -780,9 +894,12 @@ class ReceiveDialogs {
                           onSaved: (value) => quantityStr = value!,
                         ),
                         const SizedBox(height: 16),
+                        // Выбор даты
                         Row(
                           children: [
-                            Expanded(child: Text("Дата: ${formatDate(selectedDate)}")),
+                            Expanded(
+                                child:
+                                    Text("Дата: ${formatDate(selectedDate)}")),
                             TextButton(
                               onPressed: () async {
                                 final pickedDate = await showDatePicker(
@@ -808,14 +925,18 @@ class ReceiveDialogs {
                             ),
                           ],
                         ),
+                        // Выбор времени
                         Row(
                           children: [
-                            Expanded(child: Text("Время: ${formatTime(selectedDate)}")),
+                            Expanded(
+                                child:
+                                    Text("Время: ${formatTime(selectedDate)}")),
                             TextButton(
                               onPressed: () async {
                                 final pickedTime = await showTimePicker(
                                   context: dialogContext,
-                                  initialTime: TimeOfDay.fromDateTime(selectedDate),
+                                  initialTime:
+                                      TimeOfDay.fromDateTime(selectedDate),
                                 );
                                 if (pickedTime != null) {
                                   setStateDialog(() {
@@ -900,7 +1021,8 @@ class ReceiveDialogs {
       context: context,
       builder: (alertContext) => AlertDialog(
         title: const Text('Подтверждение'),
-        content: Text('Удалить запись приёмки для "${receive.product.productName}"?'),
+        content: Text(
+            'Удалить запись приёмки для "${receive.product.productName}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(alertContext, false),

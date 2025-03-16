@@ -7,17 +7,11 @@ class CategoryPresenter {
   final CategoryRepository _categoryRepository;
 
   CategoryPresenter({CategoryRepository? categoryRepository})
-      : _categoryRepository = categoryRepository ??
-      CategoryRepository(baseUrl: AppConstants.apiBaseUrl);
+      : _categoryRepository = categoryRepository ?? CategoryRepository(baseUrl: AppConstants.apiBaseUrl);
 
   /// Получает список всех категорий.
   Future<List<Category>> fetchAllCategory() async {
     return await _categoryRepository.getAllCategory();
-  }
-
-  /// Получает категорию по её ID.
-  Future<Category> fetchCategoryById(int categoryId) async {
-    return await _categoryRepository.getCategoryById(categoryId);
   }
 
   /// Создает новую категорию.
@@ -30,10 +24,7 @@ class CategoryPresenter {
   }
 
   /// Обновляет данные категории.
-  Future<String> updateCategory(
-      Category category, {
-        String? name,
-      }) async {
+  Future<String> updateCategory(Category category, {String? name}) async {
     if (name != null) {
       category.categoryName = name;
     }

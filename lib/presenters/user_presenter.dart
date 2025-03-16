@@ -11,8 +11,7 @@ class UserPresenter {
   final UserRepository _userRepository;
 
   UserPresenter({UserRepository? userRepository})
-      : _userRepository =
-      userRepository ?? UserRepository(baseUrl: AppConstants.apiBaseUrl);
+      : _userRepository = userRepository ?? UserRepository(baseUrl: AppConstants.apiBaseUrl);
 
   /// Геттер для доступа к UserAPIService.
   UserAPIService get userApiService => _userRepository.userAPIService;
@@ -26,21 +25,14 @@ class UserPresenter {
   }
 
   /// Создает нового пользователя.
-  Future<String> createUser({
-    required String fullName,
-    required String username,
-    required String password,
-    required Group group,
-    String? avatarFilePath,
-    bool status = true,
-  }) async {
+  Future<String> createUser({required String fullName, required String username, required String password, required Group group, String? avatarFilePath, bool status = true}) async {
     final newUser = User(
       userID: 0,
       userFullname: fullName,
       userName: username,
       userPassword: password,
       userGroup: group,
-      userAvatar: '', // будет установлено на сервере
+      userAvatar: '',
       userStatus: status,
       userCreationDate: DateTime.now(),
       userLastLoginDate: DateTime.now(),
@@ -49,15 +41,7 @@ class UserPresenter {
   }
 
   /// Обновляет данные пользователя.
-  Future<String> updateUser(
-      User user, {
-        String? fullName,
-        String? username,
-        String? avatar,
-        bool? status,
-        String? password,
-        Group? group,
-      }) async {
+  Future<String> updateUser(User user, {String? fullName, String? username, String? avatar, bool? status, String? password, Group? group}) async {
     if (fullName != null) user.userFullname = fullName;
     if (username != null) user.userName = username;
     if (avatar != null) user.userAvatar = avatar;

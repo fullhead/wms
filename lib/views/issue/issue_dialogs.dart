@@ -29,10 +29,13 @@ class IssueDialogs {
     required WarehousePresenter warehousePresenter,
     String? token,
   }) async {
+    final ScrollController warehouseScrollController = ScrollController();
+
     List<Map<String, dynamic>> selection = [];
     try {
       final warehouses = await warehousePresenter.fetchAllWarehouse();
-      final availableWarehouses = warehouses.where((w) => w.warehouseQuantity > 0).toList();
+      final availableWarehouses =
+      warehouses.where((w) => w.warehouseQuantity > 0).toList();
       selection = availableWarehouses.map((w) {
         return {
           'product': w.warehouseProductID,
@@ -53,8 +56,12 @@ class IssueDialogs {
           builder: (context, setStateDialog) {
             List<Map<String, dynamic>> filtered = selection.where((item) {
               final Product product = item['product'];
-              return product.productName.toLowerCase().contains(searchQuery.toLowerCase()) ||
-                  product.productBarcode.toLowerCase().contains(searchQuery.toLowerCase());
+              return product.productName
+                  .toLowerCase()
+                  .contains(searchQuery.toLowerCase()) ||
+                  product.productBarcode
+                      .toLowerCase()
+                      .contains(searchQuery.toLowerCase());
             }).toList();
 
             return AlertDialog(
@@ -87,7 +94,9 @@ class IssueDialogs {
                     ? const Center(child: Text("Нет доступных товаров на складе"))
                     : Scrollbar(
                   thumbVisibility: true,
+                  controller: warehouseScrollController,
                   child: ListView.builder(
+                    controller: warehouseScrollController,
                     itemCount: filtered.length,
                     itemBuilder: (ctx, index) {
                       final item = filtered[index];
@@ -97,8 +106,11 @@ class IssueDialogs {
                         leading: ClipRRect(
                           borderRadius: BorderRadius.circular(8.0),
                           child: CachedNetworkImage(
-                            imageUrl: AppConstants.apiBaseUrl + product.productImage,
-                            httpHeaders: token != null ? {"Authorization": "Bearer $token"} : {},
+                            imageUrl:
+                            AppConstants.apiBaseUrl + product.productImage,
+                            httpHeaders: token != null
+                                ? {"Authorization": "Bearer $token"}
+                                : {},
                             width: 50,
                             height: 50,
                             fit: BoxFit.cover,
@@ -132,6 +144,8 @@ class IssueDialogs {
     required BuildContext context,
     required CellPresenter cellPresenter,
   }) async {
+    final ScrollController cellScrollController = ScrollController();
+
     List<Cell> cells = [];
     String searchQuery = '';
     bool isLoading = true;
@@ -164,7 +178,9 @@ class IssueDialogs {
                     ? const Center(child: CircularProgressIndicator())
                     : Scrollbar(
                   thumbVisibility: true,
+                  controller: cellScrollController,
                   child: ListView.builder(
+                    controller: cellScrollController,
                     itemCount: displayedCells.length,
                     itemBuilder: (ctx, index) {
                       final cell = displayedCells[index];
@@ -192,15 +208,19 @@ class IssueDialogs {
   }
 
   /// Виджет для построения строки деталей записи.
-  static Widget _buildDetailRow(ThemeData theme, IconData icon, String label, String value) {
+  static Widget _buildDetailRow(
+      ThemeData theme, IconData icon, String label, String value) {
     return Row(
       children: [
         Icon(icon, color: Colors.deepOrange, size: 16),
         const SizedBox(width: 4),
-        Text(label, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+        Text(label,
+            style: theme.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(width: 4),
         Flexible(
-          child: Text(value, style: theme.textTheme.bodyMedium, overflow: TextOverflow.ellipsis),
+          child:
+          Text(value, style: theme.textTheme.bodyMedium, overflow: TextOverflow.ellipsis),
         ),
       ],
     );
@@ -235,7 +255,8 @@ class IssueDialogs {
                   padding: const EdgeInsets.only(left: 16.0),
                   child: Text(
                     issue.product.productName,
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -263,8 +284,11 @@ class IssueDialogs {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8.0),
                             child: CachedNetworkImage(
-                              imageUrl: AppConstants.apiBaseUrl + issue.product.productImage,
-                              httpHeaders: token != null ? {"Authorization": "Bearer $token"} : {},
+                              imageUrl:
+                              AppConstants.apiBaseUrl + issue.product.productImage,
+                              httpHeaders: token != null
+                                  ? {"Authorization": "Bearer $token"}
+                                  : {},
                               width: imageSize,
                               height: imageSize,
                               fit: BoxFit.cover,
@@ -273,13 +297,17 @@ class IssueDialogs {
                         ),
                         const SizedBox(height: 20),
                         const Divider(height: 20),
-                        _buildDetailRow(theme, Icons.qr_code, "Штрихкод:", issue.product.productBarcode),
+                        _buildDetailRow(theme, Icons.qr_code, "Штрихкод:",
+                            issue.product.productBarcode),
                         const Divider(height: 20),
-                        _buildDetailRow(theme, Icons.location_on, "Ячейка:", issue.cell.cellName),
+                        _buildDetailRow(
+                            theme, Icons.location_on, "Ячейка:", issue.cell.cellName),
                         const Divider(height: 20),
-                        _buildDetailRow(theme, Icons.confirmation_number, "Количество:", issue.issueQuantity.toString()),
+                        _buildDetailRow(theme, Icons.confirmation_number, "Количество:",
+                            issue.issueQuantity.toString()),
                         const Divider(height: 20),
-                        _buildDetailRow(theme, Icons.calendar_today, "Дата:", formatDateTime(issue.issueDate)),
+                        _buildDetailRow(theme, Icons.calendar_today, "Дата:",
+                            formatDateTime(issue.issueDate)),
                         const Divider(height: 20),
                       ],
                     ),
@@ -290,10 +318,12 @@ class IssueDialogs {
                         children: [
                           TextButton.icon(
                             onPressed: onEdit,
-                            icon: Icon(Icons.edit, color: theme.colorScheme.secondary),
+                            icon: Icon(Icons.edit,
+                                color: theme.colorScheme.secondary),
                             label: Text(
                               "Редактировать",
-                              style: TextStyle(color: theme.colorScheme.secondary),
+                              style:
+                              TextStyle(color: theme.colorScheme.secondary),
                             ),
                           ),
                           TextButton.icon(
@@ -334,7 +364,8 @@ class IssueDialogs {
     Cell selectedCell = issue.cell;
     int availableStock = 0;
     try {
-      final warehouseRecord = await warehousePresenter.fetchWarehouseById(selectedCell.cellID);
+      final warehouseRecord =
+      await warehousePresenter.fetchWarehouseById(selectedCell.cellID);
       availableStock = warehouseRecord.warehouseQuantity;
     } catch (e) {
       availableStock = issue.issueQuantity;
@@ -348,7 +379,8 @@ class IssueDialogs {
             return AlertDialog(
               insetPadding: EdgeInsets.zero,
               contentPadding: const EdgeInsets.all(10),
-              title: Text("Редактировать запись выдачи", style: Theme.of(dialogContext).textTheme.titleMedium),
+              title: Text("Редактировать запись выдачи",
+                  style: Theme.of(dialogContext).textTheme.titleMedium),
               content: SizedBox(
                 width: MediaQuery.of(dialogContext).size.width *
                     (MediaQuery.of(dialogContext).size.width > 800 ? 0.5 : 0.95),
@@ -375,11 +407,15 @@ class IssueDialogs {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text("Продукция", style: Theme.of(dialogContext).textTheme.titleMedium),
+                                Text("Продукция",
+                                    style: Theme.of(dialogContext)
+                                        .textTheme
+                                        .titleMedium),
                                 const SizedBox(height: 8),
                                 InkWell(
                                   onTap: () async {
-                                    final result = await showWarehouseProductSelectionDialog(
+                                    final result =
+                                    await showWarehouseProductSelectionDialog(
                                       context: dialogContext,
                                       warehousePresenter: warehousePresenter,
                                       token: token,
@@ -388,7 +424,8 @@ class IssueDialogs {
                                       setStateDialog(() {
                                         selectedProduct = result['product'];
                                         selectedCell = result['cell'];
-                                        availableStock = result['availableQuantity'];
+                                        availableStock =
+                                        result['availableQuantity'];
                                         quantitySliderValue = 1;
                                         state.didChange(result);
                                       });
@@ -403,10 +440,17 @@ class IssueDialogs {
                                     child: Row(
                                       children: [
                                         ClipRRect(
-                                          borderRadius: BorderRadius.circular(8.0),
+                                          borderRadius:
+                                          BorderRadius.circular(8.0),
                                           child: CachedNetworkImage(
-                                            imageUrl: AppConstants.apiBaseUrl + selectedProduct.productImage,
-                                            httpHeaders: token != null ? {"Authorization": "Bearer $token"} : {},
+                                            imageUrl: AppConstants.apiBaseUrl +
+                                                selectedProduct.productImage,
+                                            httpHeaders: token != null
+                                                ? {
+                                              "Authorization":
+                                              "Bearer $token"
+                                            }
+                                                : {},
                                             width: 50,
                                             height: 50,
                                             fit: BoxFit.cover,
@@ -416,7 +460,8 @@ class IssueDialogs {
                                         Expanded(
                                           child: Text(
                                             selectedProduct.productName,
-                                            style: const TextStyle(fontSize: 16),
+                                            style:
+                                            const TextStyle(fontSize: 16),
                                           ),
                                         ),
                                         const Icon(Icons.arrow_drop_down),
@@ -429,7 +474,8 @@ class IssueDialogs {
                                     padding: const EdgeInsets.only(top: 5),
                                     child: Text(
                                       state.errorText!,
-                                      style: const TextStyle(color: Colors.red),
+                                      style:
+                                      const TextStyle(color: Colors.red),
                                     ),
                                   ),
                               ],
@@ -438,19 +484,30 @@ class IssueDialogs {
                         ),
                         const SizedBox(height: 16),
                         // Автоматическая подстановка ячейки (информационное поле)
-                        Text("Ячейка: ${selectedCell.cellName}", style: Theme.of(dialogContext).textTheme.titleMedium),
+                        Text("Ячейка: ${selectedCell.cellName}",
+                            style:
+                            Theme.of(dialogContext).textTheme.titleMedium),
                         const SizedBox(height: 16),
                         // Выбор количества через ползунок
                         if (availableStock > 0)
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("Количество (Доступно: $availableStock шт.)", style: Theme.of(dialogContext).textTheme.titleMedium),
+                              Text(
+                                "Количество (Доступно: $availableStock шт.)",
+                                style: Theme.of(dialogContext)
+                                    .textTheme
+                                    .titleMedium,
+                              ),
                               Slider(
-                                value: quantitySliderValue.clamp(1, availableStock).toDouble(),
+                                value:
+                                quantitySliderValue.clamp(1, availableStock)
+                                    .toDouble(),
                                 min: 1,
                                 max: availableStock.toDouble(),
-                                divisions: availableStock > 1 ? availableStock - 1 : null,
+                                divisions: availableStock > 1
+                                    ? availableStock - 1
+                                    : null,
                                 label: quantitySliderValue.toInt().toString(),
                                 onChanged: (value) {
                                   setStateDialog(() {
@@ -459,7 +516,8 @@ class IssueDialogs {
                                 },
                               ),
                               const SizedBox(height: 8),
-                              Text("Выбранное количество: ${quantitySliderValue.toInt()}"),
+                              Text(
+                                  "Выбранное количество: ${quantitySliderValue.toInt()}"),
                             ],
                           )
                         else
@@ -468,7 +526,9 @@ class IssueDialogs {
                         // Выбор даты
                         Row(
                           children: [
-                            Expanded(child: Text("Дата: ${formatDate(selectedDate)}")),
+                            Expanded(
+                                child: Text(
+                                    "Дата: ${formatDate(selectedDate)}")),
                             TextButton(
                               onPressed: () async {
                                 final pickedDate = await showDatePicker(
@@ -497,12 +557,15 @@ class IssueDialogs {
                         // Выбор времени
                         Row(
                           children: [
-                            Expanded(child: Text("Время: ${formatTime(selectedDate)}")),
+                            Expanded(
+                                child: Text(
+                                    "Время: ${formatTime(selectedDate)}")),
                             TextButton(
                               onPressed: () async {
                                 final pickedTime = await showTimePicker(
                                   context: dialogContext,
-                                  initialTime: TimeOfDay.fromDateTime(selectedDate),
+                                  initialTime:
+                                  TimeOfDay.fromDateTime(selectedDate),
                                 );
                                 if (pickedTime != null) {
                                   setStateDialog(() {
@@ -540,7 +603,8 @@ class IssueDialogs {
                         issue.cell = selectedCell;
                         issue.issueQuantity = newQuantity;
                         issue.issueDate = selectedDate;
-                        final responseMessage = await IssuePresenter().updateIssue(issue);
+                        final responseMessage =
+                        await IssuePresenter().updateIssue(issue);
                         if (Navigator.canPop(dialogContext)) {
                           Navigator.of(dialogContext).pop();
                         }
@@ -600,7 +664,8 @@ class IssueDialogs {
             return AlertDialog(
               insetPadding: EdgeInsets.zero,
               contentPadding: const EdgeInsets.all(10),
-              title: Text("Создать запись выдачи", style: Theme.of(dialogContext).textTheme.titleMedium),
+              title: Text("Создать запись выдачи",
+                  style: Theme.of(dialogContext).textTheme.titleMedium),
               content: SizedBox(
                 width: MediaQuery.of(dialogContext).size.width *
                     (MediaQuery.of(dialogContext).size.width > 800 ? 0.5 : 0.95),
@@ -622,11 +687,15 @@ class IssueDialogs {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text("Продукция", style: Theme.of(dialogContext).textTheme.titleMedium),
+                                Text("Продукция",
+                                    style: Theme.of(dialogContext)
+                                        .textTheme
+                                        .titleMedium),
                                 const SizedBox(height: 8),
                                 InkWell(
                                   onTap: () async {
-                                    final result = await showWarehouseProductSelectionDialog(
+                                    final result =
+                                    await showWarehouseProductSelectionDialog(
                                       context: dialogContext,
                                       warehousePresenter: warehousePresenter,
                                       token: token,
@@ -635,7 +704,8 @@ class IssueDialogs {
                                       setStateDialog(() {
                                         selectedProduct = result['product'];
                                         selectedCell = result['cell'];
-                                        availableStock = result['availableQuantity'];
+                                        availableStock =
+                                        result['availableQuantity'];
                                         quantitySliderValue = 1;
                                         state.didChange(result);
                                       });
@@ -651,10 +721,17 @@ class IssueDialogs {
                                       children: [
                                         if (selectedProduct != null)
                                           ClipRRect(
-                                            borderRadius: BorderRadius.circular(8.0),
+                                            borderRadius:
+                                            BorderRadius.circular(8.0),
                                             child: CachedNetworkImage(
-                                              imageUrl: AppConstants.apiBaseUrl + selectedProduct!.productImage,
-                                              httpHeaders: token != null ? {"Authorization": "Bearer $token"} : {},
+                                              imageUrl: AppConstants.apiBaseUrl +
+                                                  selectedProduct!.productImage,
+                                              httpHeaders: token != null
+                                                  ? {
+                                                "Authorization":
+                                                "Bearer $token"
+                                              }
+                                                  : {},
                                               width: 50,
                                               height: 50,
                                               fit: BoxFit.cover,
@@ -669,8 +746,10 @@ class IssueDialogs {
                                         const SizedBox(width: 10),
                                         Expanded(
                                           child: Text(
-                                            selectedProduct?.productName ?? "Выберите продукцию",
-                                            style: const TextStyle(fontSize: 16),
+                                            selectedProduct?.productName ??
+                                                "Выберите продукцию",
+                                            style:
+                                            const TextStyle(fontSize: 16),
                                           ),
                                         ),
                                         const Icon(Icons.arrow_drop_down),
@@ -683,7 +762,8 @@ class IssueDialogs {
                                     padding: const EdgeInsets.only(top: 5),
                                     child: Text(
                                       state.errorText!,
-                                      style: const TextStyle(color: Colors.red),
+                                      style:
+                                      const TextStyle(color: Colors.red),
                                     ),
                                   ),
                               ],
@@ -692,20 +772,32 @@ class IssueDialogs {
                         ),
                         const SizedBox(height: 16),
                         // Автоматическая подстановка ячейки (информационное поле)
-                        Text("Ячейка: ${selectedCell != null ? selectedCell!.cellName : 'Не выбрана'}",
-                            style: Theme.of(dialogContext).textTheme.titleMedium),
+                        Text(
+                          "Ячейка: ${selectedCell != null ? selectedCell!.cellName : 'Не выбрана'}",
+                          style:
+                          Theme.of(dialogContext).textTheme.titleMedium,
+                        ),
                         const SizedBox(height: 16),
                         // Выбор количества через ползунок
                         if (availableStock > 0)
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("Количество (Доступно: $availableStock шт.)", style: Theme.of(dialogContext).textTheme.titleMedium),
+                              Text(
+                                "Количество (Доступно: $availableStock шт.)",
+                                style: Theme.of(dialogContext)
+                                    .textTheme
+                                    .titleMedium,
+                              ),
                               Slider(
-                                value: quantitySliderValue.clamp(1, availableStock).toDouble(),
+                                value:
+                                quantitySliderValue.clamp(1, availableStock)
+                                    .toDouble(),
                                 min: 1,
                                 max: availableStock.toDouble(),
-                                divisions: availableStock > 1 ? availableStock - 1 : null,
+                                divisions: availableStock > 1
+                                    ? availableStock - 1
+                                    : null,
                                 label: quantitySliderValue.toInt().toString(),
                                 onChanged: (value) {
                                   setStateDialog(() {
@@ -714,7 +806,8 @@ class IssueDialogs {
                                 },
                               ),
                               const SizedBox(height: 8),
-                              Text("Выбранное количество: ${quantitySliderValue.toInt()}"),
+                              Text(
+                                  "Выбранное количество: ${quantitySliderValue.toInt()}"),
                             ],
                           )
                         else
@@ -723,7 +816,10 @@ class IssueDialogs {
                         // Выбор даты
                         Row(
                           children: [
-                            Expanded(child: Text("Дата: ${formatDate(selectedDate)}")),
+                            Expanded(
+                              child:
+                              Text("Дата: ${formatDate(selectedDate)}"),
+                            ),
                             TextButton(
                               onPressed: () async {
                                 final pickedDate = await showDatePicker(
@@ -752,12 +848,16 @@ class IssueDialogs {
                         // Выбор времени
                         Row(
                           children: [
-                            Expanded(child: Text("Время: ${formatTime(selectedDate)}")),
+                            Expanded(
+                              child:
+                              Text("Время: ${formatTime(selectedDate)}"),
+                            ),
                             TextButton(
                               onPressed: () async {
                                 final pickedTime = await showTimePicker(
                                   context: dialogContext,
-                                  initialTime: TimeOfDay.fromDateTime(selectedDate),
+                                  initialTime:
+                                  TimeOfDay.fromDateTime(selectedDate),
                                 );
                                 if (pickedTime != null) {
                                   setStateDialog(() {
@@ -841,7 +941,8 @@ class IssueDialogs {
       context: context,
       builder: (alertContext) => AlertDialog(
         title: const Text('Подтверждение'),
-        content: Text('Удалить запись выдачи для "${issue.product.productName}"?'),
+        content:
+        Text('Удалить запись выдачи для "${issue.product.productName}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(alertContext, false),

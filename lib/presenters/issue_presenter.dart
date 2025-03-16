@@ -11,10 +11,7 @@ class IssuePresenter {
   final IssueRepository _issueRepository;
 
   IssuePresenter({IssueRepository? issueRepository})
-      : _issueRepository = issueRepository ??
-      IssueRepository(
-        baseUrl: AppConstants.apiBaseUrl,
-      );
+      : _issueRepository = issueRepository ?? IssueRepository(baseUrl: AppConstants.apiBaseUrl);
 
   /// Геттер для доступа к IssueAPIService.
   IssueAPIService get issueApiService => _issueRepository.issueAPIService;
@@ -27,18 +24,8 @@ class IssuePresenter {
     return await _issueRepository.getAllIssues();
   }
 
-  /// Получает запись выдачи по её ID.
-  Future<Issue> fetchIssueById(int issueId) async {
-    return await _issueRepository.getIssueById(issueId);
-  }
-
   /// Создает новую запись выдачи.
-  Future<String> createIssue({
-    required Product product,
-    required Cell cell,
-    required int issueQuantity,
-    DateTime? issueDate,
-  }) async {
+  Future<String> createIssue({required Product product, required Cell cell, required int issueQuantity, DateTime? issueDate}) async {
     final issue = Issue(
       issueID: 0,
       product: product,
@@ -50,13 +37,7 @@ class IssuePresenter {
   }
 
   /// Обновляет данные записи выдачи.
-  Future<String> updateIssue(
-      Issue issue, {
-        Product? product,
-        Cell? cell,
-        int? issueQuantity,
-        DateTime? issueDate,
-      }) async {
+  Future<String> updateIssue(Issue issue, {Product? product, Cell? cell, int? issueQuantity, DateTime? issueDate}) async {
     if (product != null) issue.product = product;
     if (cell != null) issue.cell = cell;
     if (issueQuantity != null) issue.issueQuantity = issueQuantity;

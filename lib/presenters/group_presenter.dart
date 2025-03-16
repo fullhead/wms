@@ -7,25 +7,15 @@ class GroupPresenter {
   final GroupRepository _groupRepository;
 
   GroupPresenter({GroupRepository? groupRepository})
-      : _groupRepository = groupRepository ??
-      GroupRepository(baseUrl: AppConstants.apiBaseUrl);
+      : _groupRepository = groupRepository ?? GroupRepository(baseUrl: AppConstants.apiBaseUrl);
 
   /// Получает список всех групп.
   Future<List<Group>> fetchAllGroups() async {
     return await _groupRepository.getAllGroups();
   }
 
-  /// Получает группу по её ID.
-  Future<Group> fetchGroupById(int groupId) async {
-    return await _groupRepository.getGroupById(groupId);
-  }
-
   /// Создает новую группу.
-  Future<String> createGroup({
-    required String groupName,
-    required String groupAccessLevel,
-    bool groupStatus = true,
-  }) async {
+  Future<String> createGroup({required String groupName, required String groupAccessLevel, bool groupStatus = true}) async {
     final group = Group(
       groupID: 0,
       groupName: groupName,
@@ -37,12 +27,7 @@ class GroupPresenter {
   }
 
   /// Обновляет данные группы.
-  Future<String> updateGroup(
-      Group group, {
-        String? name,
-        String? accessLevel,
-        bool? status,
-      }) async {
+  Future<String> updateGroup(Group group, {String? name, String? accessLevel, bool? status}) async {
     if (name != null) group.groupName = name;
     if (accessLevel != null) group.groupAccessLevel = accessLevel;
     if (status != null) group.groupStatus = status;

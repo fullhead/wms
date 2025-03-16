@@ -11,36 +11,21 @@ class ReceivePresenter {
   final ReceiveRepository _receiveRepository;
 
   ReceivePresenter({ReceiveRepository? receiveRepository})
-      : _receiveRepository = receiveRepository ??
-      ReceiveRepository(
-        baseUrl: AppConstants.apiBaseUrl,
-      );
+      : _receiveRepository = receiveRepository ?? ReceiveRepository(baseUrl: AppConstants.apiBaseUrl);
 
   /// Геттер для доступа к ReceiveAPIService.
-  ReceiveAPIService get receiveApiService =>
-      _receiveRepository.receiveAPIService;
+  ReceiveAPIService get receiveApiService => _receiveRepository.receiveAPIService;
 
   /// Геттер для доступа к ProductAPIService.
-  ProductAPIService get productApiService =>
-      _receiveRepository.productAPIService;
+  ProductAPIService get productApiService => _receiveRepository.productAPIService;
 
   /// Получает список всех записей приёмки.
   Future<List<Receive>> fetchAllReceives() async {
     return _receiveRepository.getAllReceives();
   }
 
-  /// Получает запись приёмки по её ID.
-  Future<Receive> fetchReceiveById(int receiveId) async {
-    return _receiveRepository.getReceiveById(receiveId);
-  }
-
   /// Создает новую запись приёмки.
-  Future<String> createReceive({
-    required Product product,
-    required Cell cell,
-    required int receiveQuantity,
-    DateTime? receiveDate,
-  }) async {
+  Future<String> createReceive({required Product product, required Cell cell, required int receiveQuantity, DateTime? receiveDate}) async {
     final receive = Receive(
       receiveID: 0,
       product: product,
@@ -52,13 +37,7 @@ class ReceivePresenter {
   }
 
   /// Обновляет данные записи приёмки.
-  Future<String> updateReceive(
-      Receive receive, {
-        Product? product,
-        Cell? cell,
-        int? receiveQuantity,
-        DateTime? receiveDate,
-      }) async {
+  Future<String> updateReceive(Receive receive, {Product? product, Cell? cell, int? receiveQuantity, DateTime? receiveDate}) async {
     if (product != null) {
       receive.product = product;
     }

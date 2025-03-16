@@ -8,8 +8,7 @@ class WarehousePresenter {
   final WarehouseRepository _warehouseRepository;
 
   WarehousePresenter({WarehouseRepository? warehouseRepository})
-      : _warehouseRepository =
-      warehouseRepository ?? WarehouseRepository(baseUrl: AppConstants.apiBaseUrl);
+      : _warehouseRepository = warehouseRepository ?? WarehouseRepository(baseUrl: AppConstants.apiBaseUrl);
 
   /// Геттер для доступа к WarehouseAPIService.
   WarehouseAPIService get warehouseApiService => _warehouseRepository.warehouseAPIService;

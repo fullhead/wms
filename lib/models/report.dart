@@ -19,10 +19,8 @@ class ReportEntry {
       productName: json['ProductName'] ?? '',
       cellName: json['CellName'] ?? '',
       quantity: json['quantity'] ?? 0,
-      recordDate: DateTime.tryParse(json['recordDate']?.toString() ?? '')
-          ?? DateTime.now(),
-      reportDate: DateTime.tryParse(json['ReportDate']?.toString() ?? '')
-          ?? DateTime.now(),
+      recordDate: DateTime.tryParse(json['recordDate']?.toString() ?? '') ?? DateTime.now(),
+      reportDate: DateTime.tryParse(json['ReportDate']?.toString() ?? '') ?? DateTime.now(),
     );
   }
 }

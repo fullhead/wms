@@ -33,7 +33,6 @@ class PersonalizationPresenter {
   }
 
   /// Обновляет аватар пользователя, используя новый файл.
-  /// [avatarImagePath] — путь к новому изображению аватара.
   Future<String> updateAvatar(User user, String avatarImagePath) async {
     final String newAvatarPath = await _userPresenter.setUserAvatar(user.userID, avatarImagePath);
     user.userAvatar = newAvatarPath;
@@ -66,8 +65,4 @@ class PersonalizationPresenter {
     return await _userPresenter.updateUser(user, password: newPassword);
   }
 
-  /// Обновляет сессию пользователя, получая новый токен.
-  Future<void> refreshUserSession() async {
-    await _sessionManager.refreshSession();
-  }
 }

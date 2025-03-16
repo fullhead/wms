@@ -72,7 +72,6 @@ String getMonthName(String month) {
 }
 
 /// Формирует человекочитаемый заголовок (например, "Отчет за день 2025-03-15")
-/// на основе [reportType] и ответа [response] бэкенда.
 String buildReceiveReportTitle(ReportType reportType, Map<String, dynamic> response) {
   switch (reportType) {
     case ReportType.daily:

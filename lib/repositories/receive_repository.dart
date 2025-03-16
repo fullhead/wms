@@ -6,8 +6,7 @@ import 'package:wms/services/category_api_service.dart';
 import 'package:wms/services/cell_api_service.dart';
 import 'package:wms/core/session/session_manager.dart';
 
-/// Репозиторий для работы с приёмками через ReceiveAPIService, ProductAPIService,
-/// CategoryAPIService и CellAPIService.
+/// Репозиторий для работы с приёмками через ReceiveAPIService, ProductAPIService, CategoryAPIService и CellAPIService.
 class ReceiveRepository {
   final ReceiveAPIService receiveAPIService;
   final ProductAPIService productAPIService;
@@ -21,20 +20,16 @@ class ReceiveRepository {
     CategoryAPIService? categoryAPIService,
     CellAPIService? cellAPIService,
     required String baseUrl,
-  })  : receiveAPIService =
-      receiveAPIService ?? ReceiveAPIService(baseUrl: baseUrl),
-        productAPIService =
-            productAPIService ?? ProductAPIService(baseUrl: baseUrl),
-        categoryAPIService =
-            categoryAPIService ?? CategoryAPIService(baseUrl: baseUrl),
+  })  : receiveAPIService =receiveAPIService ?? ReceiveAPIService(baseUrl: baseUrl),
+        productAPIService =productAPIService ?? ProductAPIService(baseUrl: baseUrl),
+        categoryAPIService =categoryAPIService ?? CategoryAPIService(baseUrl: baseUrl),
         cellAPIService = cellAPIService ?? CellAPIService(baseUrl: baseUrl),
         _sessionManager = SessionManager();
 
   /// Получает список всех записей приёмки.
   Future<List<Receive>> getAllReceives() async {
     await _sessionManager.validateSession();
-    final List<Map<String, dynamic>> receiveMaps =
-    await receiveAPIService.getAllReceives();
+    final List<Map<String, dynamic>> receiveMaps = await receiveAPIService.getAllReceives();
     List<Receive> receives = [];
     for (var map in receiveMaps) {
       final int productId = map['ProductID'] ?? 0;
@@ -52,8 +47,7 @@ class ReceiveRepository {
   /// Получает запись приёмки по её ID.
   Future<Receive> getReceiveById(int receiveId) async {
     await _sessionManager.validateSession();
-    final Map<String, dynamic> receiveMap =
-    await receiveAPIService.getReceiveById(receiveId);
+    final Map<String, dynamic> receiveMap = await receiveAPIService.getReceiveById(receiveId);
     final int productId = receiveMap['ProductID'] ?? 0;
     final int cellId = receiveMap['CellID'] ?? 0;
     final productMap = await productAPIService.getProductById(productId);

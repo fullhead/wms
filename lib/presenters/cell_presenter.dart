@@ -7,17 +7,11 @@ class CellPresenter {
   final CellRepository _cellRepository;
 
   CellPresenter({CellRepository? cellRepository})
-      : _cellRepository =
-      cellRepository ?? CellRepository(baseUrl: AppConstants.apiBaseUrl);
+      : _cellRepository = cellRepository ?? CellRepository(baseUrl: AppConstants.apiBaseUrl);
 
   /// Получает список всех ячеек.
   Future<List<Cell>> fetchAllCells() async {
     return await _cellRepository.getAllCells();
-  }
-
-  /// Получает ячейку по её ID.
-  Future<Cell> fetchCellById(int cellId) async {
-    return await _cellRepository.getCellById(cellId);
   }
 
   /// Создает новую ячейку.

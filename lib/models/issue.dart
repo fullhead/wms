@@ -19,9 +19,7 @@ class Issue {
   });
 
   /// Фабричный конструктор для создания объекта Issue из JSON, полученного от API.
-  /// Параметры [product] и [cell] должны быть получены отдельно.
-  factory Issue.fromJson(Map<String, dynamic> json,
-      {required Product product, required Cell cell}) {
+  factory Issue.fromJson(Map<String, dynamic> json, {required Product product, required Cell cell}) {
     return Issue(
       issueID: json['IssueID'] ?? 0,
       product: product,
@@ -32,7 +30,6 @@ class Issue {
   }
 
   /// Преобразует объект Issue в JSON для отправки на сервер.
-  /// Дата форматируется в строку формата "YYYY-MM-DD HH:MM:SS".
   Map<String, dynamic> toJson() {
     final formattedDate =
         '${issueDate.year}-${twoDigits(issueDate.month)}-${twoDigits(issueDate.day)} '

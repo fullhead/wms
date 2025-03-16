@@ -7,8 +7,10 @@ class CategoryRepository {
   final CategoryAPIService categoryAPIService;
   final SessionManager _sessionManager;
 
-  CategoryRepository({CategoryAPIService? categoryAPIService, required String baseUrl})
-      : categoryAPIService = categoryAPIService ?? CategoryAPIService(baseUrl: baseUrl),
+  CategoryRepository(
+      {CategoryAPIService? categoryAPIService, required String baseUrl})
+      : categoryAPIService =
+            categoryAPIService ?? CategoryAPIService(baseUrl: baseUrl),
         _sessionManager = SessionManager();
 
   /// Получает список всех категорий.
@@ -33,7 +35,8 @@ class CategoryRepository {
   /// Обновляет данные категории.
   Future<String> updateCategory(Category category) async {
     await _sessionManager.validateSession();
-    return await categoryAPIService.updateCategory(category.toJson(), category.categoryID);
+    return await categoryAPIService.updateCategory(
+        category.toJson(), category.categoryID);
   }
 
   /// Удаляет категорию по её ID.

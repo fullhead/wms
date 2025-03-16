@@ -6,8 +6,7 @@ import 'package:wms/services/category_api_service.dart';
 import 'package:wms/services/cell_api_service.dart';
 import 'package:wms/core/session/session_manager.dart';
 
-/// Репозиторий для работы с выдачей через IssueAPIService, ProductAPIService,
-/// CategoryAPIService и CellAPIService.
+/// Репозиторий для работы с выдачей через IssueAPIService, ProductAPIService, CategoryAPIService и CellAPIService.
 class IssueRepository {
   final IssueAPIService issueAPIService;
   final ProductAPIService productAPIService;
@@ -21,20 +20,16 @@ class IssueRepository {
     CategoryAPIService? categoryAPIService,
     CellAPIService? cellAPIService,
     required String baseUrl,
-  })  : issueAPIService =
-      issueAPIService ?? IssueAPIService(baseUrl: baseUrl),
-        productAPIService =
-            productAPIService ?? ProductAPIService(baseUrl: baseUrl),
-        categoryAPIService =
-            categoryAPIService ?? CategoryAPIService(baseUrl: baseUrl),
+  })  : issueAPIService =issueAPIService ?? IssueAPIService(baseUrl: baseUrl),
+        productAPIService =productAPIService ?? ProductAPIService(baseUrl: baseUrl),
+        categoryAPIService =categoryAPIService ?? CategoryAPIService(baseUrl: baseUrl),
         cellAPIService = cellAPIService ?? CellAPIService(baseUrl: baseUrl),
         _sessionManager = SessionManager();
 
   /// Получает список всех записей выдачи.
   Future<List<Issue>> getAllIssues() async {
     await _sessionManager.validateSession();
-    final List<Map<String, dynamic>> issueMaps =
-    await issueAPIService.getAllIssues();
+    final List<Map<String, dynamic>> issueMaps = await issueAPIService.getAllIssues();
     List<Issue> issues = [];
     for (var map in issueMaps) {
       int productId = map['ProductID'] ?? 0;
@@ -52,8 +47,7 @@ class IssueRepository {
   /// Получает запись выдачи по её ID.
   Future<Issue> getIssueById(int issueId) async {
     await _sessionManager.validateSession();
-    final Map<String, dynamic> issueMap =
-    await issueAPIService.getIssueById(issueId);
+    final Map<String, dynamic> issueMap = await issueAPIService.getIssueById(issueId);
     int productId = issueMap['ProductID'] ?? 0;
     int cellId = issueMap['CellID'] ?? 0;
     final productMap = await productAPIService.getProductById(productId);

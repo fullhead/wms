@@ -28,7 +28,8 @@ class WmsApp extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            textStyle:
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
         textButtonTheme: TextButtonThemeData(
@@ -87,9 +88,8 @@ class WmsApp extends StatelessWidget {
           fillColor: WidgetStateProperty.all(Colors.deepOrange),
         ),
 
-        // Опционально можно уточнить цвета текста для ListTile
         listTileTheme: const ListTileThemeData(
-          textColor: Colors.black, // или любой другой контрастный цвет
+          textColor: Colors.black,
         ),
       ),
       initialRoute: AppRoutes.splash,

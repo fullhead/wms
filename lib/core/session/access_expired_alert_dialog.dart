@@ -7,7 +7,6 @@ class AccessExpiredDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Получаем из темы цвет для рамки кнопки (primary), цвет текста (onPrimary),
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary;
     final onPrimaryColor = theme.colorScheme.onPrimary;
@@ -47,12 +46,10 @@ class AccessExpiredDialog extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                // Закрываем диалог
                 Navigator.of(context, rootNavigator: true).pop();
-                // Переходим на экран авторизации, удаляя все предыдущие маршруты
                 Navigator.of(context).pushNamedAndRemoveUntil(
                   AppRoutes.authorization,
-                      (Route<dynamic> route) => false,
+                  (Route<dynamic> route) => false,
                 );
               },
               style: ElevatedButton.styleFrom(

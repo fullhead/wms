@@ -19,9 +19,7 @@ class Receive {
   });
 
   /// Фабричный конструктор для создания объекта Receive из JSON, полученного от API.
-  /// Параметры [product] и [cell] должны быть получены отдельно.
-  factory Receive.fromJson(Map<String, dynamic> json,
-      {required Product product, required Cell cell}) {
+  factory Receive.fromJson(Map<String, dynamic> json, {required Product product, required Cell cell}) {
     return Receive(
       receiveID: json['ReceiveID'] ?? 0,
       product: product,
@@ -32,7 +30,6 @@ class Receive {
   }
 
   /// Преобразует объект Receive в JSON для отправки на сервер.
-  /// Дата форматируется в строку формата "YYYY-MM-DD HH:MM:SS"
   Map<String, dynamic> toJson() {
     final formattedDate =
         '${receiveDate.year}-${twoDigits(receiveDate.month)}-${twoDigits(receiveDate.day)} '
