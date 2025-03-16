@@ -172,7 +172,7 @@ class WmsDrawerState extends State<WmsDrawer> {
           width: 70,
           height: 70,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.3),
+            color: Colors.white.withValues(alpha: 0.3),
             shape: BoxShape.circle,
           ),
         ),
@@ -180,7 +180,7 @@ class WmsDrawerState extends State<WmsDrawer> {
         Container(
           width: 150,
           height: 20,
-          color: Colors.white.withOpacity(0.3),
+          color: Colors.white.withValues(alpha: 0.3),
         ),
       ],
     );
@@ -446,7 +446,7 @@ class WmsDrawerState extends State<WmsDrawer> {
             'Отчеты',
             style: TextStyle(fontSize: 16),
           ),
-          initiallyExpanded: _activeRoute == AppRoutes.receiptReports ||
+          initiallyExpanded: _activeRoute == AppRoutes.receiveReports ||
               _activeRoute == AppRoutes.issueReports,
           childrenPadding: const EdgeInsets.only(left: 24.0),
           children: [
@@ -454,10 +454,10 @@ class WmsDrawerState extends State<WmsDrawer> {
               leading: const Icon(Icons.arrow_downward),
               title: Text(
                 'Отчеты по приемкам',
-                style: _subItemStyle(AppRoutes.receiptReports),
+                style: _subItemStyle(AppRoutes.receiveReports),
               ),
-              selected: _activeRoute == AppRoutes.receiptReports,
-              onTap: () => _handleNavigation(AppRoutes.receiptReports),
+              selected: _activeRoute == AppRoutes.receiveReports,
+              onTap: () => _handleNavigation(AppRoutes.receiveReports),
             ),
             ListTile(
               leading: const Icon(Icons.arrow_upward),
@@ -573,7 +573,7 @@ class WmsDrawerState extends State<WmsDrawer> {
             'Отчеты',
             style: TextStyle(fontSize: 16),
           ),
-          initiallyExpanded: _activeRoute == AppRoutes.receiptReports ||
+          initiallyExpanded: _activeRoute == AppRoutes.receiveReports ||
               _activeRoute == AppRoutes.issueReports,
           childrenPadding: const EdgeInsets.only(left: 24.0),
           children: [
@@ -581,10 +581,10 @@ class WmsDrawerState extends State<WmsDrawer> {
               leading: const Icon(Icons.arrow_downward),
               title: Text(
                 'Отчеты по приемкам',
-                style: _subItemStyle(AppRoutes.receiptReports),
+                style: _subItemStyle(AppRoutes.receiveReports),
               ),
-              selected: _activeRoute == AppRoutes.receiptReports,
-              onTap: () => _handleNavigation(AppRoutes.receiptReports),
+              selected: _activeRoute == AppRoutes.receiveReports,
+              onTap: () => _handleNavigation(AppRoutes.receiveReports),
             ),
             ListTile(
               leading: const Icon(Icons.arrow_upward),

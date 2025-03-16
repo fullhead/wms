@@ -9,7 +9,8 @@ import 'package:wms/views/receive/receive_view.dart';
 import 'package:wms/views/issue/issue_view.dart';
 import 'package:wms/views/warehouse_view.dart';
 import 'package:wms/views/cell_view.dart';
-import 'package:wms/views/report/report_view.dart';
+import 'package:wms/views/report/report_receive/report_receive_view.dart';
+import 'package:wms/views/report/report_issue/report_issue_view.dart';
 import 'package:wms/views/personalization_view.dart';
 import 'package:wms/views/splash_screen.dart';
 
@@ -25,7 +26,7 @@ class AppRoutes {
   static const String issues = '/issues';
   static const String warehouse = '/warehouse';
   static const String cells = '/cells';
-  static const String receiptReports = '/receiptReports';
+  static const String receiveReports = '/receiptReports';
   static const String issueReports = '/issueReports';
   static const String personalization = '/personalization';
 
@@ -49,8 +50,8 @@ class AppRoutes {
         issues: (context) => const IssueView(),
         warehouse: (context) => const WarehouseView(),
         cells: (context) => const CellView(),
-        receiptReports: (context) => const ReportView(),
-        issueReports: (context) => const ReportView(),
+        receiveReports: (context) => const ReportReceiveView(),
+        issueReports: (context) => const ReportIssueView(),
       });
     } else if (role == '2') {
       // Уровень 2: доступ только к управлению запасами и учёту запасов
@@ -64,8 +65,8 @@ class AppRoutes {
       // Уровень 3: доступ к панели управления и отчётам
       routes.addAll({
         dashboard: (context) => const DashboardView(),
-        receiptReports: (context) => const ReportView(),
-        issueReports: (context) => const ReportView(),
+        receiveReports: (context) => const ReportReceiveView(),
+        issueReports: (context) => const ReportIssueView(),
       });
     }
     return routes;
@@ -85,8 +86,8 @@ class AppRoutes {
       issues: (context) => const IssueView(),
       warehouse: (context) => const WarehouseView(),
       cells: (context) => const CellView(),
-      receiptReports: (context) => const ReportView(),
-      issueReports: (context) => const ReportView(),
+      receiveReports: (context) => const ReportReceiveView(),
+      issueReports: (context) => const ReportIssueView(),
       personalization: (context) => const PersonalizationView(),
     };
   }
