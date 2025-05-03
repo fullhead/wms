@@ -22,39 +22,26 @@ class ReceiveAPIService {
     return headers;
   }
 
-  /// Получает список всех записей приёмки.
+  /// Получает список всех записей приёмки (+ детали).
   Future<List<Map<String, dynamic>>> getAllReceives() async {
     final headers = await _getHeaders();
-    final uri = Uri.parse('$baseUrl/receives');
-    try {
-      final response = await http.get(uri, headers: headers);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List;
-        return data.cast<Map<String, dynamic>>();
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при получении данных приёмки');
-      }
-    } catch (e) {
-      rethrow;
+    final uri = Uri.parse('$baseUrl/receives?withDetails=true');
+    final res = await http.get(uri, headers: headers);
+    if (res.statusCode == 200) {
+      return (jsonDecode(res.body) as List).cast<Map<String, dynamic>>();
     }
+    throw ApiException((jsonDecode(res.body))['error'] ?? 'Неизвестная ошибка при получении данных приёмки');
   }
 
-  /// Получает запись приёмки по её ID.
+  /// Получает запись приёмки по её ID (+ детали).
   Future<Map<String, dynamic>> getReceiveById(int receiveId) async {
     final headers = await _getHeaders();
-    final uri = Uri.parse('$baseUrl/receives/$receiveId');
-    try {
-      final response = await http.get(uri, headers: headers);
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw ApiException(errorData['error'] ?? 'Неизвестная ошибка при получении записи приёмки по ID');
-      }
-    } catch (e) {
-      rethrow;
+    final uri = Uri.parse('$baseUrl/receives/$receiveId?withDetails=true');
+    final res = await http.get(uri, headers: headers);
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body) as Map<String, dynamic>;
     }
+    throw ApiException((jsonDecode(res.body))['error'] ?? 'Неизвестная ошибка при получении записи приёмки по ID');
   }
 
   /// Создает новую запись приёмки.

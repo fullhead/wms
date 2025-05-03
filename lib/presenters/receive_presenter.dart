@@ -4,28 +4,26 @@ import 'package:wms/models/product.dart';
 import 'package:wms/models/cell.dart';
 import 'package:wms/repositories/receive_repository.dart';
 import 'package:wms/services/receive_api_service.dart';
-import 'package:wms/services/product_api_service.dart';
 
 /// Презентер для управления приёмками.
 class ReceivePresenter {
-  final ReceiveRepository _receiveRepository;
+  final ReceiveRepository _repo =
+  ReceiveRepository(baseUrl: AppConstants.apiBaseUrl);
 
-  ReceivePresenter({ReceiveRepository? receiveRepository})
-      : _receiveRepository = receiveRepository ?? ReceiveRepository(baseUrl: AppConstants.apiBaseUrl);
+  /// Доступ к API (нужно, например, для отчётов).
+  ReceiveAPIService get receiveApiService => _repo.receiveAPIService;
 
-  /// Геттер для доступа к ReceiveAPIService.
-  ReceiveAPIService get receiveApiService => _receiveRepository.receiveAPIService;
+  /// Получает список всех приёмок с продуктами и ячейками.
+  Future<List<Receive>> fetchAllReceives() => _repo.getAllReceives();
+  Future<Receive> getReceiveById(int id) => _repo.getReceiveById(id);
 
-  /// Геттер для доступа к ProductAPIService.
-  ProductAPIService get productApiService => _receiveRepository.productAPIService;
-
-  /// Получает список всех записей приёмки.
-  Future<List<Receive>> fetchAllReceives() async {
-    return _receiveRepository.getAllReceives();
-  }
-
-  /// Создает новую запись приёмки.
-  Future<String> createReceive({required Product product, required Cell cell, required int receiveQuantity, DateTime? receiveDate}) async {
+  /// Создание новой записи приёмки.
+  Future<String> createReceive({
+    required Product product,
+    required Cell cell,
+    required int receiveQuantity,
+    DateTime? receiveDate,
+  }) {
     final receive = Receive(
       receiveID: 0,
       product: product,
@@ -33,28 +31,25 @@ class ReceivePresenter {
       receiveQuantity: receiveQuantity,
       receiveDate: receiveDate ?? DateTime.now(),
     );
-    return _receiveRepository.createReceive(receive);
+    return _repo.createReceive(receive);
   }
 
-  /// Обновляет данные записи приёмки.
-  Future<String> updateReceive(Receive receive, {Product? product, Cell? cell, int? receiveQuantity, DateTime? receiveDate}) async {
-    if (product != null) {
-      receive.product = product;
-    }
-    if (cell != null) {
-      receive.cell = cell;
-    }
-    if (receiveQuantity != null) {
-      receive.receiveQuantity = receiveQuantity;
-    }
-    if (receiveDate != null) {
-      receive.receiveDate = receiveDate;
-    }
-    return _receiveRepository.updateReceive(receive);
+  /// Обновление записи приёмки.
+  Future<String> updateReceive(
+      Receive receive, {
+        Product? product,
+        Cell? cell,
+        int? receiveQuantity,
+        DateTime? receiveDate,
+      }) {
+    if (product != null) receive.product = product;
+    if (cell != null) receive.cell = cell;
+    if (receiveQuantity != null) receive.receiveQuantity = receiveQuantity;
+    if (receiveDate != null) receive.receiveDate = receiveDate;
+    return _repo.updateReceive(receive);
   }
 
-  /// Удаляет запись приёмки.
-  Future<String> deleteReceive(Receive receive) async {
-    return _receiveRepository.deleteReceive(receive.receiveID);
-  }
+  /// Удаление записи приёмки.
+  Future<String> deleteReceive(Receive receive) =>
+      _repo.deleteReceive(receive.receiveID);
 }

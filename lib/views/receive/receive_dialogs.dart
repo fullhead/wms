@@ -2,83 +2,84 @@ import 'package:barcode_scan2/barcode_scan2.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:wms/core/constants.dart';
+import 'package:wms/core/utils.dart';
 import 'package:wms/models/cell.dart';
 import 'package:wms/models/product.dart';
 import 'package:wms/models/receive.dart';
 import 'package:wms/presenters/cell_presenter.dart';
 import 'package:wms/presenters/product_presenter.dart';
 import 'package:wms/presenters/receive_presenter.dart';
-import 'package:wms/core/utils.dart';
 
+/// Сборник всех диалогов, связанных с приёмкой.
 class ReceiveDialogs {
-  /// Вспомогательная функция сканирования штрихкода.
+  /* ──────────────────────────────────────────────────────────
+   *  Вспомогательные методы
+   * ────────────────────────────────────────────────────────── */
+
+  /// Сканирование штрих-кода.
   static Future<String?> _scanBarcode() async {
     try {
       final result = await BarcodeScanner.scan();
       return result.rawContent;
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
 
-  /// Диалог выбора продукции.
+  /* ──────────────────────────────────────────────────────────
+   *  Диалог выбора продукции
+   * ────────────────────────────────────────────────────────── */
+
   static Future<Product?> showProductSelectionDialog({
     required BuildContext context,
     required ProductPresenter productPresenter,
     String? token,
   }) async {
-    final ScrollController productScrollController = ScrollController();
+    final scrollCtrl = ScrollController();
 
     List<Product> products = [];
-    String searchQuery = '';
-    bool isLoading = true;
+    String query = '';
+    bool loading = true;
+
     return showDialog<Product>(
       context: context,
-      builder: (dialogContext) {
+      builder: (dialogCtx) {
         return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            if (isLoading) {
-              productPresenter.fetchAllProduct().then((data) {
-                setStateDialog(() {
-                  products = data;
-                  isLoading = false;
+          builder: (ctx, setState) {
+            if (loading) {
+              productPresenter.fetchAllProduct().then((list) {
+                setState(() {
+                  products = list;
+                  loading = false;
                 });
               }).catchError((e) {
-                setStateDialog(() {
-                  isLoading = false;
-                });
+                setState(() => loading = false);
+                return <Product>[];
               });
             }
 
-            List<Product> displayedProducts = products.where((p) {
-              return p.productName
-                      .toLowerCase()
-                      .contains(searchQuery.toLowerCase()) ||
-                  p.productBarcode
-                      .toLowerCase()
-                      .contains(searchQuery.toLowerCase());
+            final filtered = products.where((p) {
+              return query.isEmpty ||
+                  p.productName.toLowerCase().contains(query.toLowerCase()) ||
+                  p.productBarcode.toLowerCase().contains(query.toLowerCase());
             }).toList();
 
             return AlertDialog(
               title: Row(
                 children: [
-                  const Text("Выбрать продукцию"),
+                  const Text('Выбрать продукцию'),
                   const Spacer(),
                   IconButton(
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(28, 28),
-                      padding: EdgeInsets.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
                     icon: const Icon(Icons.camera_alt,
                         color: Colors.deepOrange, size: 24),
+                    style: IconButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(28, 28),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     onPressed: () async {
-                      final scanned = await _scanBarcode();
-                      if (scanned != null) {
-                        setStateDialog(() {
-                          searchQuery = scanned;
-                        });
-                      }
+                      final code = await _scanBarcode();
+                      if (code != null) setState(() => query = code);
                     },
                   ),
                 ],
@@ -86,22 +87,22 @@ class ReceiveDialogs {
               content: SizedBox(
                 width: double.maxFinite,
                 height: 400,
-                child: isLoading
+                child: loading
                     ? const Center(child: CircularProgressIndicator())
                     : Scrollbar(
                         thumbVisibility: true,
-                        controller: productScrollController,
+                        controller: scrollCtrl,
                         child: ListView.builder(
-                          controller: productScrollController,
-                          itemCount: displayedProducts.length,
-                          itemBuilder: (ctx, index) {
-                            final product = displayedProducts[index];
+                          controller: scrollCtrl,
+                          itemCount: filtered.length,
+                          itemBuilder: (_, i) {
+                            final p = filtered[i];
                             return ListTile(
                               leading: ClipRRect(
-                                borderRadius: BorderRadius.circular(8.0),
+                                borderRadius: BorderRadius.circular(8),
                                 child: CachedNetworkImage(
-                                  imageUrl: AppConstants.apiBaseUrl +
-                                      product.productImage,
+                                  imageUrl:
+                                      AppConstants.apiBaseUrl + p.productImage,
                                   httpHeaders: token != null
                                       ? {"Authorization": "Bearer $token"}
                                       : {},
@@ -110,11 +111,9 @@ class ReceiveDialogs {
                                   fit: BoxFit.cover,
                                 ),
                               ),
-                              title: Text(product.productName),
-                              subtitle: Text(product.productBarcode),
-                              onTap: () {
-                                Navigator.pop(context, product);
-                              },
+                              title: Text(p.productName),
+                              subtitle: Text(p.productBarcode),
+                              onTap: () => Navigator.pop(context, p),
                             );
                           },
                         ),
@@ -123,7 +122,7 @@ class ReceiveDialogs {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, null),
-                  child: const Text("Отмена"),
+                  child: const Text('Отмена'),
                 ),
               ],
             );
@@ -133,61 +132,60 @@ class ReceiveDialogs {
     );
   }
 
-  /// Диалог выбора ячейки.
+  /* ──────────────────────────────────────────────────────────
+   *  Диалог выбора ячейки
+   * ────────────────────────────────────────────────────────── */
+
   static Future<Cell?> showCellSelectionDialog({
     required BuildContext context,
     required CellPresenter cellPresenter,
   }) async {
-    final ScrollController cellScrollController = ScrollController();
+    final scrollCtrl = ScrollController();
 
     List<Cell> cells = [];
-    String searchQuery = '';
-    bool isLoading = true;
+    String query = '';
+    bool loading = true;
 
     return showDialog<Cell>(
       context: context,
-      builder: (dialogContext) {
+      builder: (dialogCtx) {
         return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            if (isLoading) {
-              cellPresenter.fetchAllCells().then((data) {
-                setStateDialog(() {
-                  cells = data;
-                  isLoading = false;
+          builder: (ctx, setState) {
+            if (loading) {
+              cellPresenter.fetchAllCells().then((list) {
+                setState(() {
+                  cells = list;
+                  loading = false;
                 });
               }).catchError((e) {
-                setStateDialog(() {
-                  isLoading = false;
-                });
+                setState(() => loading = false);
+                return <Cell>[];
               });
             }
 
-            List<Cell> displayedCells = cells.where((c) {
-              return c.cellName
-                  .toLowerCase()
-                  .contains(searchQuery.toLowerCase());
-            }).toList();
+            final filtered = cells
+                .where((c) =>
+                    c.cellName.toLowerCase().contains(query.toLowerCase()))
+                .toList();
 
             return AlertDialog(
-              title: const Text("Выберите ячейку"),
+              title: const Text('Выберите ячейку'),
               content: SizedBox(
                 width: double.maxFinite,
                 height: 400,
-                child: isLoading
+                child: loading
                     ? const Center(child: CircularProgressIndicator())
                     : Scrollbar(
                         thumbVisibility: true,
-                        controller: cellScrollController,
+                        controller: scrollCtrl,
                         child: ListView.builder(
-                          controller: cellScrollController,
-                          itemCount: displayedCells.length,
-                          itemBuilder: (ctx, index) {
-                            final cell = displayedCells[index];
+                          controller: scrollCtrl,
+                          itemCount: filtered.length,
+                          itemBuilder: (_, i) {
+                            final cell = filtered[i];
                             return ListTile(
                               title: Text(cell.cellName),
-                              onTap: () {
-                                Navigator.pop(context, cell);
-                              },
+                              onTap: () => Navigator.pop(context, cell),
                             );
                           },
                         ),
@@ -196,7 +194,7 @@ class ReceiveDialogs {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, null),
-                  child: const Text("Отмена"),
+                  child: const Text('Отмена'),
                 ),
               ],
             );
@@ -206,8 +204,11 @@ class ReceiveDialogs {
     );
   }
 
-  /// Виджет для построения строки деталей записи.
-  static Widget _buildDetailRow(
+  /* ──────────────────────────────────────────────────────────
+   *  Детали приёмки
+   * ────────────────────────────────────────────────────────── */
+
+  static Widget _detailRow(
     ThemeData theme,
     IconData icon,
     String label,
@@ -217,24 +218,20 @@ class ReceiveDialogs {
       children: [
         Icon(icon, color: Colors.deepOrange, size: 16),
         const SizedBox(width: 4),
-        Text(
-          label,
-          style:
-              theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-        ),
+        Text(label,
+            style: theme.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(width: 4),
         Flexible(
-          child: Text(
-            value,
-            style: theme.textTheme.bodyMedium,
-            overflow: TextOverflow.ellipsis,
-          ),
+          child: Text(value,
+              style: theme.textTheme.bodyMedium,
+              overflow: TextOverflow.ellipsis),
         ),
       ],
     );
   }
 
-  /// Диалог отображения деталей записи приёмки с кнопками редактирования и удаления.
+  /// Диалог информации о приёмке.
   static void showReceiveDetails({
     required BuildContext context,
     required Receive receive,
@@ -251,7 +248,7 @@ class ReceiveDialogs {
         final isDesktop = size.width > 800;
         final dialogWidth = isDesktop ? size.width * 0.4 : size.width * 0.9;
         final dialogHeight = size.height * 0.65;
-        final imageSize = isDesktop ? 650.0 : 350.0;
+        final imageSize = isDesktop ? 600.0 : 250.0;
 
         return AlertDialog(
           insetPadding: EdgeInsets.zero,
@@ -261,19 +258,16 @@ class ReceiveDialogs {
             children: [
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 16.0),
-                  child: Text(
-                    receive.product.productName,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  padding: const EdgeInsets.only(left: 16),
+                  child: Text(receive.product.productName,
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.of(ctx).pop(),
-              ),
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(ctx)),
             ],
           ),
           content: SizedBox(
@@ -284,68 +278,58 @@ class ReceiveDialogs {
                 constraints: BoxConstraints(minHeight: dialogHeight),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8.0),
-                            child: CachedNetworkImage(
-                              imageUrl: AppConstants.apiBaseUrl +
-                                  receive.product.productImage,
-                              httpHeaders: token != null
-                                  ? {"Authorization": "Bearer $token"}
-                                  : {},
-                              width: imageSize,
-                              height: imageSize,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                    Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: AppConstants.apiBaseUrl +
+                              receive.product.productImage,
+                          httpHeaders: token != null
+                              ? {"Authorization": "Bearer $token"}
+                              : {},
+                          width: imageSize,
+                          height: imageSize,
+                          fit: BoxFit.cover,
                         ),
-                        const SizedBox(height: 20),
-                        const Divider(height: 20),
-                        _buildDetailRow(theme, Icons.qr_code, "Штрихкод:",
-                            receive.product.productBarcode),
-                        const Divider(height: 20),
-                        _buildDetailRow(theme, Icons.location_on, "Ячейка:",
-                            receive.cell.cellName),
-                        const Divider(height: 20),
-                        _buildDetailRow(theme, Icons.confirmation_number,
-                            "Количество:", receive.receiveQuantity.toString()),
-                        const Divider(height: 20),
-                        _buildDetailRow(theme, Icons.calendar_today, "Дата:",
-                            formatDateTime(receive.receiveDate)),
-                        const Divider(height: 20),
-                      ],
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          TextButton.icon(
-                            onPressed: onEdit,
-                            icon: Icon(Icons.edit,
-                                color: theme.colorScheme.secondary),
-                            label: Text(
-                              "Редактировать",
-                              style:
-                                  TextStyle(color: theme.colorScheme.secondary),
-                            ),
-                          ),
-                          TextButton.icon(
-                            onPressed: onDelete,
-                            icon: Icon(Icons.delete,
-                                color: theme.colorScheme.error),
-                            label: Text(
-                              "Удалить",
-                              style: TextStyle(color: theme.colorScheme.error),
-                            ),
-                          ),
-                        ],
                       ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Divider(height: 20),
+                    _detailRow(theme, Icons.qr_code, 'Штрихкод:',
+                        receive.product.productBarcode),
+                    const Divider(height: 20),
+                    _detailRow(theme, Icons.category, 'Категория:',
+                        receive.product.productCategory.categoryName),
+                    const Divider(height: 20),
+                    _detailRow(theme, Icons.location_on, 'Ячейка:',
+                        receive.cell.cellName),
+                    const Divider(height: 20),
+                    _detailRow(theme, Icons.confirmation_number, 'Количество:',
+                        receive.receiveQuantity.toString()),
+                    const Divider(height: 20),
+                    _detailRow(theme, Icons.calendar_today, 'Дата:',
+                        formatDateTime(receive.receiveDate)),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        TextButton.icon(
+                          onPressed: onEdit,
+                          icon: Icon(Icons.edit,
+                              color: theme.colorScheme.secondary),
+                          label: Text('Редактировать',
+                              style: TextStyle(
+                                  color: theme.colorScheme.secondary)),
+                        ),
+                        TextButton.icon(
+                          onPressed: onDelete,
+                          icon: Icon(Icons.delete,
+                              color: theme.colorScheme.error),
+                          label: Text('Удалить',
+                              style: TextStyle(color: theme.colorScheme.error)),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -357,7 +341,10 @@ class ReceiveDialogs {
     );
   }
 
-  /// Диалог редактирования записи приёмки.
+  /* ──────────────────────────────────────────────────────────
+   *  Диалог редактирования
+   * ────────────────────────────────────────────────────────── */
+
   static Future<void> showEditReceiveDialog({
     required BuildContext context,
     required Receive receive,
@@ -368,259 +355,106 @@ class ReceiveDialogs {
   }) async {
     final parentContext = context;
     final formKey = GlobalKey<FormState>();
+
+    // Локальные переменные для редактирования
     DateTime selectedDate = receive.receiveDate;
     Product selectedProduct = receive.product;
     Cell selectedCell = receive.cell;
-    String quantityStr = receive.receiveQuantity.toString();
+    String qtyStr = receive.receiveQuantity.toString();
 
-    return showDialog(
+    await showDialog(
       context: context,
-      builder: (dialogContext) {
+      builder: (dialogCtx) {
         return StatefulBuilder(
-          builder: (dialogContext, setStateDialog) {
+          builder: (ctx, setState) {
             return AlertDialog(
               insetPadding: EdgeInsets.zero,
               contentPadding: const EdgeInsets.all(10),
-              title: Text(
-                "Редактировать запись приёмки",
-                style: Theme.of(dialogContext).textTheme.titleMedium,
-              ),
+              title: Text('Редактировать запись приёмки',
+                  style: Theme.of(ctx).textTheme.titleMedium),
               content: SizedBox(
-                width: MediaQuery.of(dialogContext).size.width *
-                    (MediaQuery.of(dialogContext).size.width > 800
-                        ? 0.5
-                        : 0.95),
+                width: MediaQuery.of(ctx).size.width *
+                    (MediaQuery.of(ctx).size.width > 800 ? 0.5 : 0.95),
                 child: SingleChildScrollView(
                   child: Form(
                     key: formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Поле выбора продукции
+                        /* 1. Продукция */
                         FormField<Product>(
                           initialValue: selectedProduct,
-                          validator: (value) {
-                            if (value == null) {
-                              return "Выберите продукцию";
-                            }
-                            return null;
-                          },
-                          builder: (state) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Продукция",
-                                  style: Theme.of(dialogContext)
-                                      .textTheme
-                                      .titleMedium,
-                                ),
-                                const SizedBox(height: 8),
-                                InkWell(
-                                  onTap: () async {
-                                    final product =
-                                        await showProductSelectionDialog(
-                                      context: dialogContext,
-                                      productPresenter: productPresenter,
-                                      token: token,
-                                    );
-                                    if (product != null) {
-                                      setStateDialog(() {
-                                        selectedProduct = product;
-                                        state.didChange(product);
-                                      });
-                                    }
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(8.0),
-                                          child: CachedNetworkImage(
-                                            imageUrl: AppConstants.apiBaseUrl +
-                                                selectedProduct.productImage,
-                                            httpHeaders: token != null
-                                                ? {
-                                                    "Authorization":
-                                                        "Bearer $token"
-                                                  }
-                                                : {},
-                                            width: 50,
-                                            height: 50,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                            child: Text(
-                                                selectedProduct.productName)),
-                                        const Icon(Icons.arrow_drop_down),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                if (state.hasError)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 5),
-                                    child: Text(
-                                      state.errorText!,
-                                      style: const TextStyle(color: Colors.red),
-                                    ),
-                                  ),
-                              ],
-                            );
-                          },
+                          validator: (v) =>
+                              v == null ? 'Выберите продукцию' : null,
+                          builder: (state) => _productSelectTile(
+                            ctx,
+                            product: selectedProduct,
+                            token: token,
+                            onPressed: () async {
+                              final p = await showProductSelectionDialog(
+                                context: ctx,
+                                productPresenter: productPresenter,
+                                token: token,
+                              );
+                              if (p != null) {
+                                setState(() {
+                                  selectedProduct = p;
+                                  state.didChange(p);
+                                });
+                              }
+                            },
+                          ),
                         ),
                         const SizedBox(height: 16),
-                        // Поле выбора ячейки
+
+                        /* 2. Ячейка */
                         FormField<Cell>(
                           initialValue: selectedCell,
-                          validator: (value) {
-                            if (value == null) {
-                              return "Выберите ячейку";
-                            }
-                            return null;
-                          },
-                          builder: (state) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Ячейка",
-                                  style: Theme.of(dialogContext)
-                                      .textTheme
-                                      .titleMedium,
-                                ),
-                                const SizedBox(height: 8),
-                                InkWell(
-                                  onTap: () async {
-                                    final cell = await showCellSelectionDialog(
-                                      context: dialogContext,
-                                      cellPresenter: cellPresenter,
-                                    );
-                                    if (cell != null) {
-                                      setStateDialog(() {
-                                        selectedCell = cell;
-                                        state.didChange(cell);
-                                      });
-                                    }
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                            child: Text(selectedCell.cellName)),
-                                        const Icon(Icons.arrow_drop_down),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                if (state.hasError)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 5),
-                                    child: Text(
-                                      state.errorText!,
-                                      style: const TextStyle(color: Colors.red),
-                                    ),
-                                  ),
-                              ],
-                            );
-                          },
+                          validator: (v) =>
+                              v == null ? 'Выберите ячейку' : null,
+                          builder: (state) => _cellSelectTile(
+                            ctx,
+                            cell: selectedCell,
+                            onPressed: () async {
+                              final c = await showCellSelectionDialog(
+                                context: ctx,
+                                cellPresenter: cellPresenter,
+                              );
+                              if (c != null) {
+                                setState(() {
+                                  selectedCell = c;
+                                  state.didChange(c);
+                                });
+                              }
+                            },
+                          ),
                         ),
                         const SizedBox(height: 16),
-                        // Поле для ввода количества
+
+                        /* 3. Количество */
                         TextFormField(
-                          initialValue: quantityStr,
+                          initialValue: qtyStr,
                           keyboardType: TextInputType.number,
                           decoration:
-                              const InputDecoration(labelText: "Количество"),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Введите количество";
+                              const InputDecoration(labelText: 'Количество'),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return 'Введите количество';
                             }
-                            if (int.tryParse(value) == null ||
-                                int.parse(value) <= 0) {
-                              return "Количество должно быть положительным числом";
+                            final n = int.tryParse(v);
+                            if (n == null || n <= 0) {
+                              return 'Количество должно быть положительным';
                             }
                             return null;
                           },
-                          onSaved: (value) {
-                            quantityStr = value!;
-                          },
+                          onSaved: (v) => qtyStr = v!,
                         ),
                         const SizedBox(height: 16),
-                        // Выбор даты
-                        Row(
-                          children: [
-                            Expanded(
-                                child:
-                                    Text("Дата: ${formatDate(selectedDate)}")),
-                            TextButton(
-                              onPressed: () async {
-                                final pickedDate = await showDatePicker(
-                                  context: dialogContext,
-                                  initialDate: selectedDate,
-                                  firstDate: DateTime(2000),
-                                  lastDate: DateTime(2100),
-                                );
-                                if (pickedDate != null) {
-                                  setStateDialog(() {
-                                    selectedDate = DateTime(
-                                      pickedDate.year,
-                                      pickedDate.month,
-                                      pickedDate.day,
-                                      selectedDate.hour,
-                                      selectedDate.minute,
-                                      selectedDate.second,
-                                    );
-                                  });
-                                }
-                              },
-                              child: const Text("Выбрать дату"),
-                            ),
-                          ],
-                        ),
-                        // Выбор времени
-                        Row(
-                          children: [
-                            Expanded(
-                                child:
-                                    Text("Время: ${formatTime(selectedDate)}")),
-                            TextButton(
-                              onPressed: () async {
-                                final pickedTime = await showTimePicker(
-                                  context: dialogContext,
-                                  initialTime:
-                                      TimeOfDay.fromDateTime(selectedDate),
-                                );
-                                if (pickedTime != null) {
-                                  setStateDialog(() {
-                                    selectedDate = DateTime(
-                                      selectedDate.year,
-                                      selectedDate.month,
-                                      selectedDate.day,
-                                      pickedTime.hour,
-                                      pickedTime.minute,
-                                      selectedDate.second,
-                                    );
-                                  });
-                                }
-                              },
-                              child: const Text("Выбрать время"),
-                            ),
-                          ],
-                        ),
+
+                        /* 4. Дата + время */
+                        _dateTimePickers(ctx, selectedDate, (d) {
+                          setState(() => selectedDate = d);
+                        }),
                       ],
                     ),
                   ),
@@ -628,46 +462,38 @@ class ReceiveDialogs {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text("Отмена"),
-                ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Отмена')),
                 TextButton(
                   onPressed: () async {
                     if (formKey.currentState?.validate() ?? false) {
-                      formKey.currentState?.save();
+                      formKey.currentState!.save();
                       try {
-                        final updatedQuantity = int.parse(quantityStr);
                         receive.product = selectedProduct;
                         receive.cell = selectedCell;
-                        receive.receiveQuantity = updatedQuantity;
+                        receive.receiveQuantity = int.parse(qtyStr);
                         receive.receiveDate = selectedDate;
 
-                        final responseMessage =
+                        final msg =
                             await ReceivePresenter().updateReceive(receive);
-                        if (Navigator.canPop(dialogContext)) {
-                          Navigator.of(dialogContext).pop();
-                        }
+                        if (Navigator.canPop(ctx)) Navigator.pop(ctx);
                         await refreshReceives();
                         ScaffoldMessenger.of(parentContext).showSnackBar(
                           SnackBar(
-                            content: Text(responseMessage),
-                            duration: const Duration(seconds: 2),
-                          ),
+                              content: Text(msg),
+                              duration: const Duration(seconds: 2)),
                         );
                       } catch (e) {
-                        if (Navigator.canPop(dialogContext)) {
-                          Navigator.of(dialogContext).pop();
-                        }
-                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        if (Navigator.canPop(ctx)) Navigator.pop(ctx);
+                        ScaffoldMessenger.of(ctx).showSnackBar(
                           SnackBar(
-                            content: Text(e.toString()),
-                            duration: const Duration(seconds: 2),
-                          ),
+                              content: Text(e.toString()),
+                              duration: const Duration(seconds: 2)),
                         );
                       }
                     }
                   },
-                  child: const Text("Сохранить"),
+                  child: const Text('Сохранить'),
                 ),
               ],
             );
@@ -677,7 +503,10 @@ class ReceiveDialogs {
     );
   }
 
-  /// Диалог создания новой записи приёмки.
+  /* ──────────────────────────────────────────────────────────
+   *  Диалог создания
+   * ────────────────────────────────────────────────────────── */
+
   static Future<void> showCreateReceiveDialog({
     required BuildContext context,
     required ReceivePresenter presenter,
@@ -688,273 +517,104 @@ class ReceiveDialogs {
   }) async {
     final parentContext = context;
     final formKey = GlobalKey<FormState>();
+
     Product? selectedProduct;
     Cell? selectedCell;
-    String quantityStr = '';
+    String qtyStr = '';
     DateTime selectedDate = DateTime.now();
 
-    return showDialog(
+    await showDialog(
       context: context,
-      builder: (dialogContext) {
+      builder: (dialogCtx) {
         return StatefulBuilder(
-          builder: (dialogContext, setStateDialog) {
+          builder: (ctx, setState) {
             return AlertDialog(
               insetPadding: EdgeInsets.zero,
               contentPadding: const EdgeInsets.all(10),
-              title: Text(
-                "Создать запись приёмки",
-                style: Theme.of(dialogContext).textTheme.titleMedium,
-              ),
+              title: Text('Создать запись приёмки',
+                  style: Theme.of(ctx).textTheme.titleMedium),
               content: SizedBox(
-                width: MediaQuery.of(dialogContext).size.width *
-                    (MediaQuery.of(dialogContext).size.width > 800
-                        ? 0.5
-                        : 0.95),
+                width: MediaQuery.of(ctx).size.width *
+                    (MediaQuery.of(ctx).size.width > 800 ? 0.5 : 0.95),
                 child: SingleChildScrollView(
                   child: Form(
                     key: formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Поле выбора продукции
+                        /* 1. Продукция */
                         FormField<Product>(
-                          validator: (value) {
-                            if (value == null) {
-                              return "Выберите продукцию";
-                            }
-                            return null;
-                          },
-                          builder: (state) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Продукция",
-                                  style: Theme.of(dialogContext)
-                                      .textTheme
-                                      .titleMedium,
-                                ),
-                                const SizedBox(height: 8),
-                                InkWell(
-                                  onTap: () async {
-                                    final product =
-                                        await showProductSelectionDialog(
-                                      context: dialogContext,
-                                      productPresenter: productPresenter,
-                                      token: token,
-                                    );
-                                    if (product != null) {
-                                      setStateDialog(() {
-                                        selectedProduct = product;
-                                        state.didChange(product);
-                                      });
-                                    }
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        if (selectedProduct != null)
-                                          ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(8.0),
-                                            child: CachedNetworkImage(
-                                              imageUrl: AppConstants
-                                                      .apiBaseUrl +
-                                                  selectedProduct!.productImage,
-                                              httpHeaders: token != null
-                                                  ? {
-                                                      "Authorization":
-                                                          "Bearer $token"
-                                                    }
-                                                  : {},
-                                              width: 50,
-                                              height: 50,
-                                              fit: BoxFit.cover,
-                                            ),
-                                          )
-                                        else
-                                          Container(
-                                            width: 50,
-                                            height: 50,
-                                            color: Colors.grey.shade300,
-                                          ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Text(
-                                            selectedProduct?.productName ??
-                                                "Выберите продукцию",
-                                            style:
-                                                const TextStyle(fontSize: 16),
-                                          ),
-                                        ),
-                                        const Icon(Icons.arrow_drop_down),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                if (state.hasError)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 5),
-                                    child: Text(
-                                      state.errorText!,
-                                      style: const TextStyle(color: Colors.red),
-                                    ),
-                                  ),
-                              ],
-                            );
-                          },
+                          validator: (v) =>
+                              v == null ? 'Выберите продукцию' : null,
+                          builder: (state) => _productSelectTile(
+                            ctx,
+                            product: selectedProduct,
+                            token: token,
+                            placeholder: 'Выберите продукцию',
+                            onPressed: () async {
+                              final p = await showProductSelectionDialog(
+                                context: ctx,
+                                productPresenter: productPresenter,
+                                token: token,
+                              );
+                              if (p != null) {
+                                setState(() {
+                                  selectedProduct = p;
+                                  state.didChange(p);
+                                });
+                              }
+                            },
+                          ),
                         ),
                         const SizedBox(height: 16),
-                        // Поле выбора ячейки
+
+                        /* 2. Ячейка */
                         FormField<Cell>(
-                          validator: (value) {
-                            if (value == null) {
-                              return "Выберите ячейку";
-                            }
-                            return null;
-                          },
-                          builder: (state) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Ячейка",
-                                  style: Theme.of(dialogContext)
-                                      .textTheme
-                                      .titleMedium,
-                                ),
-                                const SizedBox(height: 8),
-                                InkWell(
-                                  onTap: () async {
-                                    final cell = await showCellSelectionDialog(
-                                      context: dialogContext,
-                                      cellPresenter: cellPresenter,
-                                    );
-                                    if (cell != null) {
-                                      setStateDialog(() {
-                                        selectedCell = cell;
-                                        state.didChange(cell);
-                                      });
-                                    }
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            selectedCell?.cellName ??
-                                                "Выберите ячейку",
-                                            style:
-                                                const TextStyle(fontSize: 16),
-                                          ),
-                                        ),
-                                        const Icon(Icons.arrow_drop_down),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                if (state.hasError)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 5),
-                                    child: Text(
-                                      state.errorText!,
-                                      style: const TextStyle(color: Colors.red),
-                                    ),
-                                  ),
-                              ],
-                            );
-                          },
+                          validator: (v) =>
+                              v == null ? 'Выберите ячейку' : null,
+                          builder: (state) => _cellSelectTile(
+                            ctx,
+                            cell: selectedCell,
+                            placeholder: 'Выберите ячейку',
+                            onPressed: () async {
+                              final c = await showCellSelectionDialog(
+                                context: ctx,
+                                cellPresenter: cellPresenter,
+                              );
+                              if (c != null) {
+                                setState(() {
+                                  selectedCell = c;
+                                  state.didChange(c);
+                                });
+                              }
+                            },
+                          ),
                         ),
                         const SizedBox(height: 16),
-                        // Поле ввода количества
+
+                        /* 3. Количество */
                         TextFormField(
                           keyboardType: TextInputType.number,
                           decoration:
-                              const InputDecoration(labelText: "Количество"),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Введите количество";
+                              const InputDecoration(labelText: 'Количество'),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return 'Введите количество';
                             }
-                            if (int.tryParse(value) == null ||
-                                int.parse(value) <= 0) {
-                              return "Количество должно быть положительным числом";
+                            final n = int.tryParse(v);
+                            if (n == null || n <= 0) {
+                              return 'Количество должно быть положительным';
                             }
                             return null;
                           },
-                          onSaved: (value) => quantityStr = value!,
+                          onSaved: (v) => qtyStr = v!,
                         ),
                         const SizedBox(height: 16),
-                        // Выбор даты
-                        Row(
-                          children: [
-                            Expanded(
-                                child:
-                                    Text("Дата: ${formatDate(selectedDate)}")),
-                            TextButton(
-                              onPressed: () async {
-                                final pickedDate = await showDatePicker(
-                                  context: dialogContext,
-                                  initialDate: selectedDate,
-                                  firstDate: DateTime(2000),
-                                  lastDate: DateTime(2100),
-                                );
-                                if (pickedDate != null) {
-                                  setStateDialog(() {
-                                    selectedDate = DateTime(
-                                      pickedDate.year,
-                                      pickedDate.month,
-                                      pickedDate.day,
-                                      selectedDate.hour,
-                                      selectedDate.minute,
-                                      selectedDate.second,
-                                    );
-                                  });
-                                }
-                              },
-                              child: const Text("Выбрать дату"),
-                            ),
-                          ],
-                        ),
-                        // Выбор времени
-                        Row(
-                          children: [
-                            Expanded(
-                                child:
-                                    Text("Время: ${formatTime(selectedDate)}")),
-                            TextButton(
-                              onPressed: () async {
-                                final pickedTime = await showTimePicker(
-                                  context: dialogContext,
-                                  initialTime:
-                                      TimeOfDay.fromDateTime(selectedDate),
-                                );
-                                if (pickedTime != null) {
-                                  setStateDialog(() {
-                                    selectedDate = DateTime(
-                                      selectedDate.year,
-                                      selectedDate.month,
-                                      selectedDate.day,
-                                      pickedTime.hour,
-                                      pickedTime.minute,
-                                      selectedDate.second,
-                                    );
-                                  });
-                                }
-                              },
-                              child: const Text("Выбрать время"),
-                            ),
-                          ],
-                        ),
+
+                        /* 4. Дата + время */
+                        _dateTimePickers(ctx, selectedDate, (d) {
+                          setState(() => selectedDate = d);
+                        }),
                       ],
                     ),
                   ),
@@ -962,45 +622,37 @@ class ReceiveDialogs {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text("Отмена"),
-                ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Отмена')),
                 TextButton(
                   onPressed: () async {
                     if (formKey.currentState?.validate() ?? false) {
-                      formKey.currentState?.save();
+                      formKey.currentState!.save();
                       try {
-                        final newQuantity = int.parse(quantityStr);
-                        final responseMessage = await presenter.createReceive(
+                        final msg = await presenter.createReceive(
                           product: selectedProduct!,
                           cell: selectedCell!,
-                          receiveQuantity: newQuantity,
+                          receiveQuantity: int.parse(qtyStr),
                           receiveDate: selectedDate,
                         );
-                        if (Navigator.canPop(dialogContext)) {
-                          Navigator.of(dialogContext).pop();
-                        }
+                        if (Navigator.canPop(ctx)) Navigator.pop(ctx);
                         await refreshReceives();
                         ScaffoldMessenger.of(parentContext).showSnackBar(
                           SnackBar(
-                            content: Text(responseMessage),
-                            duration: const Duration(seconds: 2),
-                          ),
+                              content: Text(msg),
+                              duration: const Duration(seconds: 2)),
                         );
                       } catch (e) {
-                        if (Navigator.canPop(dialogContext)) {
-                          Navigator.of(dialogContext).pop();
-                        }
-                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        if (Navigator.canPop(ctx)) Navigator.pop(ctx);
+                        ScaffoldMessenger.of(ctx).showSnackBar(
                           SnackBar(
-                            content: Text(e.toString()),
-                            duration: const Duration(seconds: 2),
-                          ),
+                              content: Text(e.toString()),
+                              duration: const Duration(seconds: 2)),
                         );
                       }
                     }
                   },
-                  child: const Text("Создать"),
+                  child: const Text('Создать'),
                 ),
               ],
             );
@@ -1010,49 +662,201 @@ class ReceiveDialogs {
     );
   }
 
-  /// Подтверждение удаления записи приёмки.
+  /* ──────────────────────────────────────────────────────────
+   *  Подтверждение удаления
+   * ────────────────────────────────────────────────────────── */
+
   static Future<void> confirmDeleteReceive({
     required BuildContext context,
     required Receive receive,
     required ReceivePresenter presenter,
     required Future<void> Function() refreshReceives,
   }) async {
-    final bool? confirmed = await showDialog<bool>(
+    final ok = await showDialog<bool>(
       context: context,
-      builder: (alertContext) => AlertDialog(
+      builder: (alertCtx) => AlertDialog(
         title: const Text('Подтверждение'),
         content: Text(
             'Удалить запись приёмки для "${receive.product.productName}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(alertContext, false),
-            child: const Text('Отмена'),
-          ),
+              onPressed: () => Navigator.pop(alertCtx, false),
+              child: const Text('Отмена')),
           ElevatedButton(
-            onPressed: () => Navigator.pop(alertContext, true),
-            child: const Text('Удалить'),
-          ),
+              onPressed: () => Navigator.pop(alertCtx, true),
+              child: const Text('Удалить')),
         ],
       ),
     );
-    if (confirmed == true) {
+
+    if (ok == true) {
       try {
-        final responseMessage = await presenter.deleteReceive(receive);
+        final msg = await presenter.deleteReceive(receive);
         await refreshReceives();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(responseMessage),
-            duration: const Duration(seconds: 2),
-          ),
+          SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
-            duration: const Duration(seconds: 2),
-          ),
+              content: Text(e.toString()),
+              duration: const Duration(seconds: 2)),
         );
       }
     }
+  }
+
+  /* ──────────────────────────────────────────────────────────
+   *  Приватные виджеты-утилиты
+   * ────────────────────────────────────────────────────────── */
+
+  static Widget _productSelectTile(
+    BuildContext ctx, {
+    required Product? product,
+    required String? token,
+    String placeholder = '',
+    required VoidCallback onPressed,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Продукция', style: Theme.of(ctx).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: onPressed,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              children: [
+                if (product != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: CachedNetworkImage(
+                      imageUrl: AppConstants.apiBaseUrl + product.productImage,
+                      httpHeaders: token != null
+                          ? {"Authorization": "Bearer $token"}
+                          : {},
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                else
+                  Container(
+                    width: 50,
+                    height: 50,
+                    color: Colors.grey.shade300,
+                  ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(product?.productName ?? placeholder,
+                      style: const TextStyle(fontSize: 16)),
+                ),
+                const Icon(Icons.arrow_drop_down),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static Widget _cellSelectTile(
+    BuildContext ctx, {
+    required Cell? cell,
+    String placeholder = '',
+    required VoidCallback onPressed,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Ячейка', style: Theme.of(ctx).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: onPressed,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(cell?.cellName ?? placeholder,
+                      style: const TextStyle(fontSize: 16)),
+                ),
+                const Icon(Icons.arrow_drop_down),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static Widget _dateTimePickers(
+    BuildContext ctx,
+    DateTime date,
+    ValueChanged<DateTime> onChanged,
+  ) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text('Дата: ${formatDate(date)}')),
+            TextButton(
+              onPressed: () async {
+                final picked = await showDatePicker(
+                  context: ctx,
+                  initialDate: date,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) {
+                  onChanged(DateTime(
+                    picked.year,
+                    picked.month,
+                    picked.day,
+                    date.hour,
+                    date.minute,
+                    date.second,
+                  ));
+                }
+              },
+              child: const Text('Выбрать дату'),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            Expanded(child: Text('Время: ${formatTime(date)}')),
+            TextButton(
+              onPressed: () async {
+                final picked = await showTimePicker(
+                  context: ctx,
+                  initialTime: TimeOfDay.fromDateTime(date),
+                );
+                if (picked != null) {
+                  onChanged(DateTime(
+                    date.year,
+                    date.month,
+                    date.day,
+                    picked.hour,
+                    picked.minute,
+                    date.second,
+                  ));
+                }
+              },
+              child: const Text('Выбрать время'),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }

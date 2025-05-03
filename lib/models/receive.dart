@@ -1,6 +1,7 @@
-import 'package:wms/models/product.dart';
-import 'package:wms/models/cell.dart';
 import 'package:wms/core/utils.dart';
+import 'package:wms/models/category.dart';
+import 'package:wms/models/cell.dart';
+import 'package:wms/models/product.dart';
 
 /// Модель записи приёмки.
 class Receive {
@@ -18,27 +19,66 @@ class Receive {
     required this.receiveDate,
   });
 
-  /// Фабричный конструктор для создания объекта Receive из JSON, полученного от API.
-  factory Receive.fromJson(Map<String, dynamic> json, {required Product product, required Cell cell}) {
+  /// Когда продукт/ячейка загружаются отдельно.
+  factory Receive.fromJson(
+    Map<String, dynamic> json, {
+    required Product product,
+    required Cell cell,
+  }) {
     return Receive(
       receiveID: json['ReceiveID'] ?? 0,
       product: product,
       cell: cell,
       receiveQuantity: json['ReceiveQuantity'] ?? 0,
-      receiveDate: DateTime.tryParse(json['ReceiveDate'] ?? '') ?? DateTime.now(),
+      receiveDate:
+          DateTime.tryParse(json['ReceiveDate'] ?? '') ?? DateTime.now(),
     );
   }
 
-  /// Преобразует объект Receive в JSON для отправки на сервер.
+  /// API вернул всё одной строкой.
+  factory Receive.fromJsonWithDetails(Map<String, dynamic> json) {
+    /* Категория */
+    final category = Category(
+      categoryID: json['CategoryID'] ?? 0,
+      categoryName: json['categoryName'] ?? json['CategoryName'] ?? '',
+    );
+
+    /* Продукт */
+    final product = Product(
+      productID: json['ProductID'] ?? 0,
+      productCategory: category,
+      productName: json['productName'] ?? json['ProductName'] ?? '',
+      productImage: json['productImage'] ?? json['ProductImage'] ?? '',
+      productBarcode: json['productBarcode'] ?? json['ProductBarcode'] ?? '',
+    );
+
+    /* Ячейка */
+    final cell = Cell(
+      cellID: json['CellID'] ?? 0,
+      cellName: json['cellName'] ?? json['CellName'] ?? '',
+    );
+
+    return Receive(
+      receiveID: json['ReceiveID'] ?? 0,
+      product: product,
+      cell: cell,
+      receiveQuantity: json['ReceiveQuantity'] ?? 0,
+      receiveDate:
+          DateTime.tryParse(json['ReceiveDate'] ?? '') ?? DateTime.now(),
+    );
+  }
+
+  /// Конструктор для создания новой записи приёмки.
   Map<String, dynamic> toJson() {
-    final formattedDate =
+    final dt =
         '${receiveDate.year}-${twoDigits(receiveDate.month)}-${twoDigits(receiveDate.day)} '
         '${twoDigits(receiveDate.hour)}:${twoDigits(receiveDate.minute)}:${twoDigits(receiveDate.second)}';
+
     return {
       'productID': product.productID,
       'cellID': cell.cellID,
       'receiveQuantity': receiveQuantity,
-      'receiveDate': formattedDate,
+      'receiveDate': dt,
     };
   }
 }

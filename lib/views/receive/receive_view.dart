@@ -8,6 +8,7 @@ import 'package:wms/views/receive/receive_dialogs.dart';
 import 'package:wms/views/receive/receive_cards.dart';
 import 'package:wms/widgets/wms_drawer.dart';
 
+/// Экран «Приёмка».
 class ReceiveView extends StatefulWidget {
   const ReceiveView({super.key});
 
@@ -26,6 +27,9 @@ class ReceiveViewState extends State<ReceiveView> {
   String _searchQuery = '';
   String? _token;
 
+  /* ──────────────────────────────────────────────────────────
+   *  Жизненный цикл
+   * ────────────────────────────────────────────────────────── */
   @override
   void initState() {
     super.initState();
@@ -41,95 +45,103 @@ class ReceiveViewState extends State<ReceiveView> {
   Future<void> _loadReceives() async {
     setState(() => _isLoading = true);
     try {
-      final receives = await _presenter.fetchAllReceives();
+      final list = await _presenter.fetchAllReceives();
       if (!mounted) return;
-      setState(() {
-        _receives = receives;
-      });
+      setState(() => _receives = list);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Ошибка загрузки: $e"), duration: const Duration(seconds: 2)),
+        SnackBar(
+            content: Text('Ошибка загрузки: $e'),
+            duration: const Duration(seconds: 2)),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Widget _buildBody(BuildContext context) {
-    final displayedReceives = _receives.where((r) {
+  /* ──────────────────────────────────────────────────────────
+   *  UI-helpers
+   * ────────────────────────────────────────────────────────── */
+
+  Widget _body(BuildContext context) {
+    final filtered = _receives.where((r) {
       return _searchQuery.isEmpty ||
-          r.product.productName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          r.product.productBarcode.toLowerCase().contains(_searchQuery.toLowerCase());
+          r.product.productName
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase()) ||
+          r.product.productBarcode
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase());
     }).toList();
 
     if (_isLoading) {
       return ListView.builder(
         padding: const EdgeInsets.only(bottom: 80),
         itemCount: 10,
-        itemBuilder: (context, index) => const SkeletonCard(),
+        itemBuilder: (_, __) => const SkeletonCard(),
       );
     }
 
-    if (displayedReceives.isEmpty) {
+    if (filtered.isEmpty) {
       if (_searchQuery.isNotEmpty) {
         return ListView(
           children: [
             const SizedBox(height: 400),
-            Center(child: Text('Нечего не найдено!', style: Theme.of(context).textTheme.bodyMedium)),
+            Center(
+                child: Text('Нечего не найдено!',
+                    style: Theme.of(context).textTheme.bodyMedium)),
           ],
         );
-      } else {
-        return Center(
-          child: RefreshIndicator(
-            onRefresh: _loadReceives,
-            color: Theme.of(context).colorScheme.primary,
-            child: ListView(
-              padding: const EdgeInsets.only(bottom: 80),
-              children: [
-                const SizedBox(height: 400),
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Нет записей приёмки. Добавьте новую запись.', style: Theme.of(context).textTheme.bodyMedium),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _showCreateReceiveDialog,
-                        child: const Text('Добавить запись'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
       }
+      return Center(
+        child: RefreshIndicator(
+          onRefresh: _loadReceives,
+          color: Theme.of(context).colorScheme.primary,
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 80),
+            children: [
+              const SizedBox(height: 400),
+              Center(
+                child: Column(
+                  children: [
+                    Text('Нет записей приёмки. Добавьте новую запись.',
+                        style: Theme.of(context).textTheme.bodyMedium),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                        onPressed: _showCreateDialog,
+                        child: const Text('Добавить запись')),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return RefreshIndicator(
       onRefresh: _loadReceives,
       child: ListView.builder(
         padding: const EdgeInsets.only(bottom: 80),
-        itemCount: displayedReceives.length,
-        itemBuilder: (context, index) {
-          final receive = displayedReceives[index];
+        itemCount: filtered.length,
+        itemBuilder: (_, i) {
+          final rec = filtered[i];
           return ReceiveCard(
-            receive: receive,
+            receive: rec,
             token: _token,
             onTap: () {
               ReceiveDialogs.showReceiveDetails(
                 context: context,
-                receive: receive,
+                receive: rec,
                 token: _token,
                 onEdit: () {
-                  Navigator.of(context).pop();
-                  _showEditReceiveDialog(receive);
+                  Navigator.pop(context);
+                  _showEditDialog(rec);
                 },
                 onDelete: () {
-                  Navigator.of(context).pop();
-                  _confirmDeleteReceive(receive);
+                  Navigator.pop(context);
+                  _confirmDelete(rec);
                 },
               );
             },
@@ -139,21 +151,21 @@ class ReceiveViewState extends State<ReceiveView> {
     );
   }
 
-  void _startSearch() {
-    setState(() => _isSearching = true);
-  }
+  void _startSearch() => setState(() => _isSearching = true);
 
-  void _stopSearch() {
-    setState(() {
-      _isSearching = false;
-      _searchQuery = '';
-    });
-  }
+  void _stopSearch() => setState(() {
+        _isSearching = false;
+        _searchQuery = '';
+      });
 
-  Future<void> _showEditReceiveDialog(Receive receive) async {
+  /* ──────────────────────────────────────────────────────────
+   *  Диалоги
+   * ────────────────────────────────────────────────────────── */
+
+  Future<void> _showEditDialog(Receive r) async {
     await ReceiveDialogs.showEditReceiveDialog(
       context: context,
-      receive: receive,
+      receive: r,
       productPresenter: _productPresenter,
       cellPresenter: _cellPresenter,
       token: _token,
@@ -161,7 +173,7 @@ class ReceiveViewState extends State<ReceiveView> {
     );
   }
 
-  Future<void> _showCreateReceiveDialog() async {
+  Future<void> _showCreateDialog() async {
     await ReceiveDialogs.showCreateReceiveDialog(
       context: context,
       presenter: _presenter,
@@ -172,62 +184,52 @@ class ReceiveViewState extends State<ReceiveView> {
     );
   }
 
-  Future<void> _confirmDeleteReceive(Receive receive) async {
+  Future<void> _confirmDelete(Receive r) async {
     await ReceiveDialogs.confirmDeleteReceive(
       context: context,
-      receive: receive,
+      receive: r,
       presenter: _presenter,
       refreshReceives: _loadReceives,
     );
   }
 
+  /* ──────────────────────────────────────────────────────────
+   *  Build
+   * ────────────────────────────────────────────────────────── */
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: _isSearching
             ? TextField(
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: "Поиск по приёмке...",
-            border: InputBorder.none,
-          ),
-          onChanged: (value) {
-            setState(() {
-              _searchQuery = value;
-            });
-          },
-        )
-            : const Text("Приемка", style: TextStyle(color: Colors.deepOrange)),
+                autofocus: true,
+                decoration: const InputDecoration(
+                    hintText: 'Поиск по приёмке...', border: InputBorder.none),
+                onChanged: (v) => setState(() => _searchQuery = v),
+              )
+            : const Text('Приёмка', style: TextStyle(color: Colors.deepOrange)),
         actions: _isSearching
             ? [
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.deepOrange),
-            onPressed: _stopSearch,
-          ),
-        ]
+                IconButton(
+                    icon: const Icon(Icons.close, color: Colors.deepOrange),
+                    onPressed: _stopSearch)
+              ]
             : [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.deepOrange),
-            onPressed: _startSearch,
-          ),
-        ],
+                IconButton(
+                    icon: const Icon(Icons.search, color: Colors.deepOrange),
+                    onPressed: _startSearch),
+              ],
       ),
       drawer: const WmsDrawer(),
       body: LayoutBuilder(
-        builder: (context, constraints) {
-          return Center(
-            child: ConstrainedBox(
+        builder: (_, __) => Center(
+          child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 800),
-              child: _buildBody(context),
-            ),
-          );
-        },
+              child: _body(context)),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateReceiveDialog,
-        child: const Icon(Icons.add),
-      ),
+          onPressed: _showCreateDialog, child: const Icon(Icons.add)),
     );
   }
 }
