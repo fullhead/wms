@@ -43,80 +43,92 @@ class IssueViewState extends State<IssueView> {
   Future<void> _loadIssues() async {
     setState(() => _isLoading = true);
     try {
-      final issues = await _presenter.fetchAllIssues();
+      final issues = await _presenter.fetchAllIssue(); // исправлено
       if (!mounted) return;
-      setState(() {
-        _issues = issues;
-      });
+      setState(() => _issues = issues);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Ошибка загрузки: $e"), duration: const Duration(seconds: 2)),
+        SnackBar(
+          content: Text("Ошибка загрузки: $e"),
+          duration: const Duration(seconds: 2),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  /* ────────────────────────────────────────────────────────
+   *  UI-построение
+   * ──────────────────────────────────────────────────────── */
+
   Widget _buildBody(BuildContext context) {
-    final displayedIssues = _issues.where((i) {
+    final displayed = _issues.where((i) {
       return _searchQuery.isEmpty ||
-          i.product.productName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          i.product.productBarcode.toLowerCase().contains(_searchQuery.toLowerCase());
+          i.product.productName
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase()) ||
+          i.product.productBarcode
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase());
     }).toList();
 
     if (_isLoading) {
       return ListView.builder(
         padding: const EdgeInsets.only(bottom: 80),
         itemCount: 10,
-        itemBuilder: (context, index) => const SkeletonCard(),
+        itemBuilder: (_, __) => const SkeletonCard(),
       );
     }
 
-    if (displayedIssues.isEmpty) {
+    if (displayed.isEmpty) {
       if (_searchQuery.isNotEmpty) {
         return ListView(
           children: [
             const SizedBox(height: 400),
-            Center(child: Text('Нечего не найдено!', style: Theme.of(context).textTheme.bodyMedium)),
+            Center(
+              child: Text('Ничего не найдено!',
+                  style: Theme.of(context).textTheme.bodyMedium),
+            ),
           ],
         );
-      } else {
-        return Center(
-          child: RefreshIndicator(
-            onRefresh: _loadIssues,
-            color: Theme.of(context).colorScheme.primary,
-            child: ListView(
-              padding: const EdgeInsets.only(bottom: 80),
-              children: [
-                const SizedBox(height: 400),
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Нет записей выдачи. Добавьте новую запись.', style: Theme.of(context).textTheme.bodyMedium),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _showCreateIssueDialog,
-                        child: const Text('Добавить запись'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
       }
+      return Center(
+        child: RefreshIndicator(
+          onRefresh: _loadIssues,
+          color: Theme.of(context).colorScheme.primary,
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 80),
+            children: [
+              const SizedBox(height: 400),
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Нет записей выдачи. Добавьте новую.',
+                        style: Theme.of(context).textTheme.bodyMedium),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _showCreateIssueDialog,
+                      child: const Text('Добавить запись'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return RefreshIndicator(
       onRefresh: _loadIssues,
       child: ListView.builder(
         padding: const EdgeInsets.only(bottom: 80),
-        itemCount: displayedIssues.length,
-        itemBuilder: (context, index) {
-          final issue = displayedIssues[index];
+        itemCount: displayed.length,
+        itemBuilder: (context, idx) {
+          final issue = displayed[idx];
           return IssueCard(
             issue: issue,
             token: _token,
@@ -126,11 +138,11 @@ class IssueViewState extends State<IssueView> {
                 issue: issue,
                 token: _token,
                 onEdit: () {
-                  Navigator.of(context).pop();
+                  Navigator.pop(context);
                   _showEditIssueDialog(issue);
                 },
                 onDelete: () {
-                  Navigator.of(context).pop();
+                  Navigator.pop(context);
                   _confirmDeleteIssue(issue);
                 },
               );
@@ -141,16 +153,16 @@ class IssueViewState extends State<IssueView> {
     );
   }
 
-  void _startSearch() {
-    setState(() => _isSearching = true);
-  }
+  /* ────────────────────────────────────────────────────────
+   *  Действия
+   * ──────────────────────────────────────────────────────── */
 
-  void _stopSearch() {
-    setState(() {
-      _isSearching = false;
-      _searchQuery = '';
-    });
-  }
+  void _startSearch() => setState(() => _isSearching = true);
+
+  void _stopSearch() => setState(() {
+        _isSearching = false;
+        _searchQuery = '';
+      });
 
   Future<void> _showEditIssueDialog(Issue issue) async {
     await IssueDialogs.showEditIssueDialog(
@@ -185,48 +197,44 @@ class IssueViewState extends State<IssueView> {
     );
   }
 
+  /* ────────────────────────────────────────────────────────
+   *  build
+   * ──────────────────────────────────────────────────────── */
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: _isSearching
             ? TextField(
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: "Поиск по выдаче...",
-            border: InputBorder.none,
-          ),
-          onChanged: (value) {
-            setState(() {
-              _searchQuery = value;
-            });
-          },
-        )
-            : const Text("Выдача", style: TextStyle(color: Colors.deepOrange)),
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: "Поиск по выдаче...",
+                  border: InputBorder.none,
+                ),
+                onChanged: (v) => setState(() => _searchQuery = v),
+              )
+            : const Text('Выдача', style: TextStyle(color: Colors.deepOrange)),
         actions: _isSearching
             ? [
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.deepOrange),
-            onPressed: _stopSearch,
-          ),
-        ]
+                IconButton(
+                    icon: const Icon(Icons.close, color: Colors.deepOrange),
+                    onPressed: _stopSearch),
+              ]
             : [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.deepOrange),
-            onPressed: _startSearch,
-          ),
-        ],
+                IconButton(
+                    icon: const Icon(Icons.search, color: Colors.deepOrange),
+                    onPressed: _startSearch),
+              ],
       ),
       drawer: const WmsDrawer(),
       body: LayoutBuilder(
-        builder: (context, constraints) {
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: _buildBody(context),
-            ),
-          );
-        },
+        builder: (_, __) => Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: _buildBody(context),
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateIssueDialog,

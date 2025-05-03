@@ -22,39 +22,31 @@ class IssueAPIService {
     return headers;
   }
 
-  /// Получает список всех записей выдачи.
-  Future<List<Map<String, dynamic>>> getAllIssues() async {
+  /// Список всех выдач. По умолчанию сразу тянем детали.
+  Future<List<Map<String, dynamic>>> getAllIssue({bool withDetails = true}) async {
     final headers = await _getHeaders();
-    final uri = Uri.parse('$baseUrl/issues');
-    try {
-      final response = await http.get(uri, headers: headers);
-      if (response.statusCode == 200) {
-        List<dynamic> data = jsonDecode(response.body);
-        return data.cast<Map<String, dynamic>>();
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw ApiException(errorData['error'] ?? 'Ошибка при получении данных выдачи');
-      }
-    } catch (e) {
-      rethrow;
+    final uri = Uri.parse('$baseUrl/issues${withDetails ? '?withDetails=true' : ''}');
+    final resp = await http.get(uri, headers: headers);
+
+    if (resp.statusCode == 200) {
+      final data = jsonDecode(resp.body) as List;
+      return data.cast<Map<String, dynamic>>();
     }
+    final err = jsonDecode(resp.body);
+    throw ApiException(err['error'] ?? 'Ошибка получения выдач');
   }
 
-  /// Получает запись выдачи по её ID.
-  Future<Map<String, dynamic>> getIssueById(int issueId) async {
+  /// Одна запись по ID.
+  Future<Map<String, dynamic>> getIssueById(int id, {bool withDetails = true}) async {
     final headers = await _getHeaders();
-    final uri = Uri.parse('$baseUrl/issues/$issueId');
-    try {
-      final response = await http.get(uri, headers: headers);
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw ApiException(errorData['error'] ?? 'Ошибка при получении записи выдачи по ID');
-      }
-    } catch (e) {
-      rethrow;
+    final uri = Uri.parse('$baseUrl/issues/$id${withDetails ? '?withDetails=true' : ''}');
+    final resp = await http.get(uri, headers: headers);
+
+    if (resp.statusCode == 200) {
+      return jsonDecode(resp.body) as Map<String, dynamic>;
     }
+    final err = jsonDecode(resp.body);
+    throw ApiException(err['error'] ?? 'Ошибка получения выдачи');
   }
 
   /// Создает новую запись выдачи.

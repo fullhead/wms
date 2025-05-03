@@ -1,6 +1,7 @@
-import 'package:wms/models/product.dart';
-import 'package:wms/models/cell.dart';
 import 'package:wms/core/utils.dart';
+import 'package:wms/models/category.dart';
+import 'package:wms/models/cell.dart';
+import 'package:wms/models/product.dart';
 
 /// Модель записи выдачи.
 class Issue {
@@ -18,27 +19,61 @@ class Issue {
     required this.issueDate,
   });
 
-  /// Фабричный конструктор для создания объекта Issue из JSON, полученного от API.
-  factory Issue.fromJson(Map<String, dynamic> json, {required Product product, required Cell cell}) {
+  /// Используется, если продукт и ячейка уже загружены отдельно.
+  factory Issue.fromJson(
+      Map<String, dynamic> json, {
+        required Product product,
+        required Cell cell,
+      }) {
     return Issue(
-      issueID: json['IssueID'] ?? 0,
-      product: product,
-      cell: cell,
+      issueID:       json['IssueID'] ?? 0,
+      product:       product,
+      cell:          cell,
       issueQuantity: json['IssueQuantity'] ?? 0,
-      issueDate: DateTime.tryParse(json['IssueDate'] ?? '') ?? DateTime.now(),
+      issueDate:     DateTime.tryParse(json['IssueDate'] ?? '') ?? DateTime.now(),
     );
   }
 
-  /// Преобразует объект Issue в JSON для отправки на сервер.
+  /// API вернул всё одним объектом (`withDetails=true`).
+  factory Issue.fromJsonWithDetails(Map<String, dynamic> json) {
+    final category = Category(
+      categoryID  : json['CategoryID']  ?? 0,
+      categoryName: json['categoryName'] ?? json['CategoryName'] ?? '',
+    );
+
+    final product = Product(
+      productID      : json['ProductID']      ?? 0,
+      productCategory: category,
+      productName    : json['productName']    ?? json['ProductName'] ?? '',
+      productImage   : json['productImage']   ?? json['ProductImage'] ?? '',
+      productBarcode : json['productBarcode'] ?? json['ProductBarcode'] ?? '',
+    );
+
+    final cell = Cell(
+      cellID  : json['CellID']  ?? 0,
+      cellName: json['cellName'] ?? json['CellName'] ?? '',
+    );
+
+    return Issue(
+      issueID      : json['IssueID'] ?? 0,
+      product      : product,
+      cell         : cell,
+      issueQuantity: json['IssueQuantity'] ?? 0,
+      issueDate    : DateTime.tryParse(json['IssueDate'] ?? '') ?? DateTime.now(),
+    );
+  }
+
+  /// Конструктор для создания новой записи выдачи.
   Map<String, dynamic> toJson() {
-    final formattedDate =
+    final dt =
         '${issueDate.year}-${twoDigits(issueDate.month)}-${twoDigits(issueDate.day)} '
         '${twoDigits(issueDate.hour)}:${twoDigits(issueDate.minute)}:${twoDigits(issueDate.second)}';
+
     return {
-      'productID': product.productID,
-      'cellID': cell.cellID,
+      'productID'    : product.productID,
+      'cellID'       : cell.cellID,
       'issueQuantity': issueQuantity,
-      'issueDate': formattedDate,
+      'issueDate'    : dt,
     };
   }
 }

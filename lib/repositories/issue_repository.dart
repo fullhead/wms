@@ -1,78 +1,44 @@
-import 'package:wms/models/issue.dart';
-import 'package:wms/models/product.dart';
-import 'package:wms/services/issue_api_service.dart';
-import 'package:wms/services/product_api_service.dart';
-import 'package:wms/services/category_api_service.dart';
-import 'package:wms/services/cell_api_service.dart';
 import 'package:wms/core/session/session_manager.dart';
+import 'package:wms/models/issue.dart';
+import 'package:wms/services/issue_api_service.dart';
 
-/// Репозиторий для работы с выдачей через IssueAPIService, ProductAPIService, CategoryAPIService и CellAPIService.
+/// Репозиторий для работы с выдачей через IssueAPIService.
 class IssueRepository {
-  final IssueAPIService issueAPIService;
-  final ProductAPIService productAPIService;
-  final CategoryAPIService categoryAPIService;
-  final CellAPIService cellAPIService;
-  final SessionManager _sessionManager;
+  final IssueAPIService api;
+  final SessionManager _session = SessionManager();
 
-  IssueRepository({
-    IssueAPIService? issueAPIService,
-    ProductAPIService? productAPIService,
-    CategoryAPIService? categoryAPIService,
-    CellAPIService? cellAPIService,
-    required String baseUrl,
-  })  : issueAPIService =issueAPIService ?? IssueAPIService(baseUrl: baseUrl),
-        productAPIService =productAPIService ?? ProductAPIService(baseUrl: baseUrl),
-        categoryAPIService =categoryAPIService ?? CategoryAPIService(baseUrl: baseUrl),
-        cellAPIService = cellAPIService ?? CellAPIService(baseUrl: baseUrl),
-        _sessionManager = SessionManager();
+  IssueRepository({IssueAPIService? apiService, required String baseUrl})
+      : api = apiService ?? IssueAPIService(baseUrl: baseUrl);
 
-  /// Получает список всех записей выдачи.
+  /// Получает список всех записей выдачи с деталями.
   Future<List<Issue>> getAllIssues() async {
-    await _sessionManager.validateSession();
-    final List<Map<String, dynamic>> issueMaps = await issueAPIService.getAllIssues();
-    List<Issue> issues = [];
-    for (var map in issueMaps) {
-      int productId = map['ProductID'] ?? 0;
-      int cellId = map['CellID'] ?? 0;
-      final productMap = await productAPIService.getProductById(productId);
-      int categoryId = productMap['CategoryID'] ?? 0;
-      final category = await categoryAPIService.getCategoryById(categoryId);
-      Product product = Product.fromJson(productMap, category);
-      final cell = await cellAPIService.getCellById(cellId);
-      issues.add(Issue.fromJson(map, product: product, cell: cell));
-    }
-    return issues;
+    await _session.validateSession();
+    final maps = await api.getAllIssue();
+    return maps.map(Issue.fromJsonWithDetails).toList();
   }
 
-  /// Получает запись выдачи по её ID.
-  Future<Issue> getIssueById(int issueId) async {
-    await _sessionManager.validateSession();
-    final Map<String, dynamic> issueMap = await issueAPIService.getIssueById(issueId);
-    int productId = issueMap['ProductID'] ?? 0;
-    int cellId = issueMap['CellID'] ?? 0;
-    final productMap = await productAPIService.getProductById(productId);
-    int categoryId = productMap['CategoryID'] ?? 0;
-    final category = await categoryAPIService.getCategoryById(categoryId);
-    Product product = Product.fromJson(productMap, category);
-    final cell = await cellAPIService.getCellById(cellId);
-    return Issue.fromJson(issueMap, product: product, cell: cell);
+  /// Получает запись выдачи по ID с деталями.
+  Future<Issue> getIssueById(int id) async {
+    await _session.validateSession();
+    final map = await api.getIssueById(id);
+    return Issue.fromJsonWithDetails(map);
   }
 
-  /// Создает новую запись выдачи.
+  /// Создаёт новую запись выдачи.
   Future<String> createIssue(Issue issue) async {
-    await _sessionManager.validateSession();
-    return await issueAPIService.createIssue(issue.toJson());
+    await _session.validateSession();
+    return api.createIssue(issue.toJson());
   }
 
-  /// Обновляет запись выдачи.
+  /// Обновляет существующую запись выдачи.
   Future<String> updateIssue(Issue issue) async {
-    await _sessionManager.validateSession();
-    return await issueAPIService.updateIssue(issue.toJson(), issue.issueID);
+    await _session.validateSession();
+    return api.updateIssue(issue.toJson(), issue.issueID);
   }
 
-  /// Удаляет запись выдачи по её ID.
-  Future<String> deleteIssue(int issueId) async {
-    await _sessionManager.validateSession();
-    return await issueAPIService.deleteIssue(issueId);
+  /// Удаляет запись выдачи по ID.
+  Future<String> deleteIssue(int id) async {
+    await _session.validateSession();
+    return api.deleteIssue(id);
   }
 }
