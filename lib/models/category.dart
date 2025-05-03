@@ -11,7 +11,7 @@ class Category {
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
       categoryID: json['CategoryID'] ?? 0,
-      categoryName: json['CategoryName'] ?? '',
+      categoryName: json['CategoryName'] ?? json['categoryName'] ?? '',
     );
   }
 
@@ -22,3 +22,4 @@ class Category {
     };
   }
 }
+

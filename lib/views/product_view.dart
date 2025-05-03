@@ -18,9 +18,9 @@ class ProductView extends StatefulWidget {
 }
 
 class ProductViewState extends State<ProductView> {
-  // -------------------------------------------------------
-  // Поля класса
-  // -------------------------------------------------------
+  // ───────────────────────────────────────────────────────────
+  // Поля
+  // ───────────────────────────────────────────────────────────
   final ProductPresenter _presenter = ProductPresenter();
   final ImagePicker _picker = ImagePicker();
   final List<Product> _products = [];
@@ -31,9 +31,9 @@ class ProductViewState extends State<ProductView> {
   String _searchQuery = '';
   String? _token;
 
-  // -------------------------------------------------------
-  // Методы жизненного цикла
-  // -------------------------------------------------------
+  // ───────────────────────────────────────────────────────────
+  // Жизненный цикл
+  // ───────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
@@ -42,7 +42,6 @@ class ProductViewState extends State<ProductView> {
   }
 
   Future<void> _loadToken() async {
-    // Используем getAccessToken() вместо getToken()
     _token = await AuthStorage.getAccessToken();
     if (mounted) setState(() {});
   }
@@ -61,24 +60,24 @@ class ProductViewState extends State<ProductView> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Ошибка загрузки: $e"),
-          duration: const Duration(seconds: 2),
-        ),
+            content: Text("Ошибка загрузки: $e"),
+            duration: const Duration(seconds: 2)),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // -------------------------------------------------------
-  // Приватные методы для диалогов и т. п.
-  // -------------------------------------------------------
+  // ───────────────────────────────────────────────────────────
+  // Служебные методы
+  // ───────────────────────────────────────────────────────────
   Future<List<Category>> _loadCategoriesForProduct() async {
     final data = await _presenter.categoryApiService.getAllCategory();
     return data.map((json) => Category.fromJson(json)).toList();
   }
 
-  Future<File?> _showImageSourceSelectionDialog(BuildContext dialogContext) async {
+  Future<File?> _showImageSourceSelectionDialog(
+      BuildContext dialogContext) async {
     return showModalBottomSheet<File?>(
       context: dialogContext,
       builder: (context) => SafeArea(
@@ -86,21 +85,27 @@ class ProductViewState extends State<ProductView> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: Icon(Icons.photo_library, color: Theme.of(context).colorScheme.primary),
+              leading: Icon(Icons.photo_library,
+                  color: Theme.of(context).colorScheme.primary),
               title: const Text('Выбрать из галереи'),
               onTap: () async {
-                final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                final pickedFile =
+                    await _picker.pickImage(source: ImageSource.gallery);
                 if (!mounted) return;
-                Navigator.of(context).pop(pickedFile != null ? File(pickedFile.path) : null);
+                Navigator.pop(
+                    context, pickedFile != null ? File(pickedFile.path) : null);
               },
             ),
             ListTile(
-              leading: Icon(Icons.photo_camera, color: Theme.of(context).colorScheme.primary),
+              leading: Icon(Icons.photo_camera,
+                  color: Theme.of(context).colorScheme.primary),
               title: const Text('Сделать фото'),
               onTap: () async {
-                final pickedFile = await _picker.pickImage(source: ImageSource.camera);
+                final pickedFile =
+                    await _picker.pickImage(source: ImageSource.camera);
                 if (!mounted) return;
-                Navigator.of(context).pop(pickedFile != null ? File(pickedFile.path) : null);
+                Navigator.pop(
+                    context, pickedFile != null ? File(pickedFile.path) : null);
               },
             ),
           ],
@@ -113,22 +118,20 @@ class ProductViewState extends State<ProductView> {
     try {
       final result = await BarcodeScanner.scan();
       return result.rawContent;
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
 
-  // Методы поиска и фильтрации
-  void _searchStub() {
-    setState(() => _isSearching = true);
-  }
+  // ───────────────────────────────────────────────────────────
+  // Поиск и фильтры
+  // ───────────────────────────────────────────────────────────
+  void _searchStub() => setState(() => _isSearching = true);
 
-  void _stopSearch() {
-    setState(() {
-      _isSearching = false;
-      _searchQuery = '';
-    });
-  }
+  void _stopSearch() => setState(() {
+        _isSearching = false;
+        _searchQuery = '';
+      });
 
   Future<void> _showFilterDialog() async {
     final categories = await _loadCategoriesForProduct();
@@ -161,7 +164,8 @@ class ProductViewState extends State<ProductView> {
                   title: Text(
                     cat.categoryName,
                     style: TextStyle(
-                      color: isSelected ? Theme.of(ctx).colorScheme.primary : null,
+                      color:
+                          isSelected ? Theme.of(ctx).colorScheme.primary : null,
                     ),
                   ),
                   value: isSelected,
@@ -179,9 +183,8 @@ class ProductViewState extends State<ProductView> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Отмена'),
-            ),
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Отмена')),
             TextButton(
               onPressed: () {
                 setState(() {
@@ -199,9 +202,9 @@ class ProductViewState extends State<ProductView> {
     );
   }
 
-  // -------------------------------------------------------
-  // Методы отображения продукта (детали, редактирование, создание, удаление)
-  // -------------------------------------------------------
+  // ───────────────────────────────────────────────────────────
+  // Диалоги: детали / редактирование / создание / удаление
+  // ───────────────────────────────────────────────────────────
   void _showProductDetails(Product product) {
     final theme = Theme.of(context);
     showDialog(
@@ -212,7 +215,8 @@ class ProductViewState extends State<ProductView> {
         final isDesktop = size.width > 800;
         final dialogWidth = isDesktop ? size.width * 0.5 : size.width * 0.9;
         final dialogHeight = isDesktop ? size.height * 0.6 : size.height * 0.46;
-        final imageSize = isDesktop ? 750.0 : 300.0;
+        final imageSize = isDesktop ? 750.0 : 350.0;
+
         return AlertDialog(
           insetPadding: EdgeInsets.zero,
           contentPadding: const EdgeInsets.all(10),
@@ -221,17 +225,15 @@ class ProductViewState extends State<ProductView> {
             children: [
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 16.0),
-                  child: Text(
-                    product.productName,
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
+                  padding: const EdgeInsets.only(left: 16),
+                  child: Text(product.productName,
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold)),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.of(ctx).pop(),
-              ),
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(ctx)),
             ],
           ),
           content: SizedBox(
@@ -248,31 +250,24 @@ class ProductViewState extends State<ProductView> {
                     width: imageSize,
                     height: imageSize,
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 50),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       TextButton.icon(
                         onPressed: () {
-                          Navigator.of(ctx).pop();
+                          Navigator.pop(ctx);
                           _showEditProductDialog(product);
                         },
                         icon: Icon(Icons.edit, color: theme.colorScheme.secondary),
-                        label: Text(
-                          "Редактировать",
-                          style: TextStyle(color: theme.colorScheme.secondary),
-                        ),
+                        label: Text("Редактировать", style: TextStyle(color: theme.colorScheme.secondary)),
                       ),
                       TextButton.icon(
-                        onPressed: () {
-                          Navigator.of(ctx).pop();
+                        onPressed: () {Navigator.pop(ctx);
                           _confirmDeleteProduct(product);
                         },
                         icon: Icon(Icons.delete, color: theme.colorScheme.error),
-                        label: Text(
-                          "Удалить",
-                          style: TextStyle(color: theme.colorScheme.error),
-                        ),
+                        label: Text("Удалить", style: TextStyle(color: theme.colorScheme.error)),
                       ),
                     ],
                   ),
@@ -285,6 +280,7 @@ class ProductViewState extends State<ProductView> {
     );
   }
 
+  // ───────────────────── редактирование ─────────────────────
   Future<void> _showEditProductDialog(Product product) async {
     final parentContext = context;
     final editFormKey = GlobalKey<FormState>();
@@ -297,21 +293,19 @@ class ProductViewState extends State<ProductView> {
 
     try {
       allCategories = await _loadCategoriesForProduct();
-      final foundIndex = allCategories.indexWhere(
-            (cat) => cat.categoryID == product.productCategory.categoryID,
-      );
-      if (foundIndex >= 0) {
-        editedCategory = allCategories[foundIndex];
-      } else if (allCategories.isNotEmpty) {
-        editedCategory = allCategories.first;
-      }
+      final found = allCategories.indexWhere(
+          (cat) => cat.categoryID == product.productCategory.categoryID);
+      editedCategory = found >= 0
+          ? allCategories[found]
+          : allCategories.isNotEmpty
+              ? allCategories.first
+              : null;
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Ошибка загрузки категорий: $e"),
-          duration: const Duration(seconds: 2),
-        ),
+            content: Text("Ошибка загрузки категорий: $e"),
+            duration: const Duration(seconds: 2)),
       );
       return;
     }
@@ -330,10 +324,8 @@ class ProductViewState extends State<ProductView> {
         return AlertDialog(
           insetPadding: EdgeInsets.zero,
           contentPadding: const EdgeInsets.all(10),
-          title: Text(
-            "Редактировать продукт",
-            style: theme.textTheme.titleMedium,
-          ),
+          title:
+              Text("Редактировать продукт", style: theme.textTheme.titleMedium),
           content: SizedBox(
             width: dialogWidth,
             height: dialogHeight,
@@ -347,7 +339,9 @@ class ProductViewState extends State<ProductView> {
                       children: [
                         GestureDetector(
                           onTap: () async {
-                            final result = await _showImageSourceSelectionDialog(inDialogContext);
+                            final result =
+                                await _showImageSourceSelectionDialog(
+                                    inDialogContext);
                             if (result != null) {
                               editedImage = result;
                               setStateDialog(() {});
@@ -364,7 +358,9 @@ class ProductViewState extends State<ProductView> {
                         const SizedBox(height: 8),
                         ElevatedButton(
                           onPressed: () async {
-                            final result = await _showImageSourceSelectionDialog(inDialogContext);
+                            final result =
+                                await _showImageSourceSelectionDialog(
+                                    inDialogContext);
                             if (result != null) {
                               editedImage = result;
                               setStateDialog(() {});
@@ -375,9 +371,12 @@ class ProductViewState extends State<ProductView> {
                         const SizedBox(height: 20),
                         TextFormField(
                           initialValue: editedName,
-                          decoration: const InputDecoration(labelText: "Название продукта"),
-                          validator: (value) => (value == null || value.isEmpty) ? "Введите название" : null,
-                          onSaved: (value) => editedName = value!,
+                          decoration: const InputDecoration(
+                              labelText: "Название продукта"),
+                          validator: (v) => v == null || v.isEmpty
+                              ? "Введите название"
+                              : null,
+                          onSaved: (v) => editedName = v!,
                         ),
                         const SizedBox(height: 10),
                         TextFormField(
@@ -385,34 +384,33 @@ class ProductViewState extends State<ProductView> {
                           decoration: InputDecoration(
                             labelText: "Штрихкод",
                             suffixIcon: IconButton(
-                              icon: const Icon(Icons.document_scanner, color: Colors.deepOrange),
+                              icon: const Icon(Icons.document_scanner,
+                                  color: Colors.deepOrange),
                               onPressed: () async {
-                                final scannedCode = await _scanBarcode();
-                                setStateDialog(() {
-                                  editedBarcode = scannedCode ?? "";
-                                });
+                                final scanned = await _scanBarcode();
+                                setStateDialog(
+                                    () => editedBarcode = scanned ?? "");
                               },
                             ),
                           ),
-                          validator: (value) => (value == null || value.isEmpty) ? "Введите штрихкод" : null,
-                          onSaved: (value) => editedBarcode = value!,
+                          validator: (v) => v == null || v.isEmpty
+                              ? "Введите штрихкод"
+                              : null,
+                          onSaved: (v) => editedBarcode = v!,
                         ),
                         const SizedBox(height: 10),
                         DropdownButtonFormField<Category>(
-                          decoration: const InputDecoration(labelText: "Категория"),
+                          decoration:
+                              const InputDecoration(labelText: "Категория"),
                           value: editedCategory,
-                          items: allCategories.map((cat) {
-                            return DropdownMenuItem<Category>(
-                              value: cat,
-                              child: Text(cat.categoryName),
-                            );
-                          }).toList(),
-                          onChanged: (newValue) {
-                            setStateDialog(() {
-                              editedCategory = newValue;
-                            });
-                          },
-                          validator: (value) => value == null ? "Выберите категорию" : null,
+                          items: allCategories
+                              .map((cat) => DropdownMenuItem(
+                                  value: cat, child: Text(cat.categoryName)))
+                              .toList(),
+                          onChanged: (v) =>
+                              setStateDialog(() => editedCategory = v),
+                          validator: (v) =>
+                              v == null ? "Выберите категорию" : null,
                         ),
                       ],
                     ),
@@ -423,9 +421,8 @@ class ProductViewState extends State<ProductView> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(inDialogContext).pop(),
-              child: const Text("Отмена"),
-            ),
+                onPressed: () => Navigator.pop(inDialogContext),
+                child: const Text("Отмена")),
             TextButton(
               onPressed: () async {
                 if (editFormKey.currentState!.validate()) {
@@ -433,35 +430,31 @@ class ProductViewState extends State<ProductView> {
                   try {
                     String imagePath = product.productImage;
                     if (editedImage != null) {
-                      imagePath = await _presenter.productApiService.uploadProductImage(editedImage!.path);
+                      imagePath = await _presenter.productApiService
+                          .uploadProductImage(editedImage!.path);
                     }
-                    product.productName = editedName;
-                    product.productBarcode = editedBarcode;
-                    product.productImage = imagePath;
-                    if (editedCategory != null) {
-                      product.productCategory = editedCategory!;
-                    }
-                    final responseMessage = await _presenter.updateProduct(product);
-                    if (inDialogContext.mounted) {
-                      Navigator.of(inDialogContext).pop();
-                    }
+                    product
+                      ..productName = editedName
+                      ..productBarcode = editedBarcode
+                      ..productImage = imagePath
+                      ..productCategory = editedCategory!;
+                    final msg = await _presenter.updateProduct(product);
+                    if (inDialogContext.mounted) Navigator.pop(inDialogContext);
                     await _loadProducts();
                     if (mounted) {
                       ScaffoldMessenger.of(parentContext).showSnackBar(
                         SnackBar(
-                          content: Text(responseMessage),
-                          duration: const Duration(seconds: 2),
-                        ),
+                            content: Text(msg),
+                            duration: const Duration(seconds: 2)),
                       );
                     }
                   } catch (e) {
                     if (inDialogContext.mounted) {
-                      Navigator.of(inDialogContext).pop();
+                      Navigator.pop(inDialogContext);
                       ScaffoldMessenger.of(inDialogContext).showSnackBar(
                         SnackBar(
-                          content: Text(e.toString()),
-                          duration: const Duration(seconds: 2),
-                        ),
+                            content: Text(e.toString()),
+                            duration: const Duration(seconds: 2)),
                       );
                     }
                   }
@@ -475,6 +468,7 @@ class ProductViewState extends State<ProductView> {
     );
   }
 
+  // ───────────────────── создание ─────────────────────
   Future<void> _showCreateProductDialog() async {
     final parentContext = context;
     final createFormKey = GlobalKey<FormState>();
@@ -487,16 +481,13 @@ class ProductViewState extends State<ProductView> {
 
     try {
       allCategories = await _loadCategoriesForProduct();
-      if (allCategories.isNotEmpty) {
-        newCategory = allCategories.first;
-      }
+      newCategory = allCategories.isNotEmpty ? allCategories.first : null;
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Ошибка при загрузке категорий: $e"),
-          duration: const Duration(seconds: 2),
-        ),
+            content: Text("Ошибка при загрузке категорий: $e"),
+            duration: const Duration(seconds: 2)),
       );
       return;
     }
@@ -510,13 +501,11 @@ class ProductViewState extends State<ProductView> {
         final isDesktop = size.width > 800;
         final dialogWidth = isDesktop ? size.width * 0.5 : size.width * 0.95;
         final dialogHeight = isDesktop ? size.height * 0.6 : size.height * 0.7;
+
         return AlertDialog(
           insetPadding: const EdgeInsets.all(10),
           contentPadding: const EdgeInsets.all(10),
-          title: Text(
-            "Создать продукт",
-            style: theme.textTheme.titleMedium,
-          ),
+          title: Text("Создать продукт", style: theme.textTheme.titleMedium),
           content: SizedBox(
             width: dialogWidth,
             height: dialogHeight,
@@ -530,7 +519,9 @@ class ProductViewState extends State<ProductView> {
                       children: [
                         GestureDetector(
                           onTap: () async {
-                            final result = await _showImageSourceSelectionDialog(inDialogContext);
+                            final result =
+                                await _showImageSourceSelectionDialog(
+                                    inDialogContext);
                             if (result != null) {
                               newImage = result;
                               setStateDialog(() {});
@@ -547,7 +538,9 @@ class ProductViewState extends State<ProductView> {
                         const SizedBox(height: 8),
                         ElevatedButton(
                           onPressed: () async {
-                            final result = await _showImageSourceSelectionDialog(inDialogContext);
+                            final result =
+                                await _showImageSourceSelectionDialog(
+                                    inDialogContext);
                             if (result != null) {
                               newImage = result;
                               setStateDialog(() {});
@@ -557,9 +550,12 @@ class ProductViewState extends State<ProductView> {
                         ),
                         const SizedBox(height: 20),
                         TextFormField(
-                          decoration: const InputDecoration(labelText: "Название продукта"),
-                          validator: (value) => (value == null || value.isEmpty) ? "Введите название" : null,
-                          onSaved: (value) => newName = value!,
+                          decoration: const InputDecoration(
+                              labelText: "Название продукта"),
+                          validator: (v) => v == null || v.isEmpty
+                              ? "Введите название"
+                              : null,
+                          onSaved: (v) => newName = v!,
                         ),
                         const SizedBox(height: 10),
                         TextFormField(
@@ -567,33 +563,32 @@ class ProductViewState extends State<ProductView> {
                           decoration: InputDecoration(
                             labelText: "Штрихкод",
                             suffixIcon: IconButton(
-                              icon: const Icon(Icons.document_scanner, color: Colors.deepOrange),
+                              icon: const Icon(Icons.document_scanner,
+                                  color: Colors.deepOrange),
                               onPressed: () async {
-                                final scannedCode = await _scanBarcode();
-                                setStateDialog(() {
-                                  barcodeController.text = scannedCode ?? "";
-                                });
+                                final scanned = await _scanBarcode();
+                                setStateDialog(() =>
+                                    barcodeController.text = scanned ?? "");
                               },
                             ),
                           ),
-                          validator: (value) => (value == null || value.isEmpty) ? "Введите штрихкод" : null,
+                          validator: (v) => v == null || v.isEmpty
+                              ? "Введите штрихкод"
+                              : null,
                         ),
                         const SizedBox(height: 10),
                         DropdownButtonFormField<Category>(
-                          decoration: const InputDecoration(labelText: "Категория"),
+                          decoration:
+                              const InputDecoration(labelText: "Категория"),
                           value: newCategory,
-                          items: allCategories.map((cat) {
-                            return DropdownMenuItem<Category>(
-                              value: cat,
-                              child: Text(cat.categoryName),
-                            );
-                          }).toList(),
-                          onChanged: (newValue) {
-                            setStateDialog(() {
-                              newCategory = newValue;
-                            });
-                          },
-                          validator: (value) => value == null ? "Выберите категорию" : null,
+                          items: allCategories
+                              .map((cat) => DropdownMenuItem(
+                                  value: cat, child: Text(cat.categoryName)))
+                              .toList(),
+                          onChanged: (v) =>
+                              setStateDialog(() => newCategory = v),
+                          validator: (v) =>
+                              v == null ? "Выберите категорию" : null,
                         ),
                       ],
                     ),
@@ -604,48 +599,41 @@ class ProductViewState extends State<ProductView> {
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                if (inDialogContext.mounted) {
-                  Navigator.of(inDialogContext).pop();
-                }
-              },
-              child: const Text("Отмена"),
-            ),
+                onPressed: () => Navigator.pop(inDialogContext),
+                child: const Text("Отмена")),
             TextButton(
               onPressed: () async {
-                if (createFormKey.currentState!.validate() && newCategory != null) {
+                if (createFormKey.currentState!.validate() &&
+                    newCategory != null) {
                   createFormKey.currentState!.save();
                   try {
                     String imagePath = '';
                     if (newImage != null) {
-                      imagePath = await _presenter.productApiService.uploadProductImage(newImage!.path);
+                      imagePath = await _presenter.productApiService
+                          .uploadProductImage(newImage!.path);
                     }
-                    final responseMessage = await _presenter.createProduct(
+                    final msg = await _presenter.createProduct(
                       category: newCategory!,
                       productName: newName,
                       productBarcode: barcodeController.text,
                       productImage: imagePath,
                     );
-                    if (inDialogContext.mounted) {
-                      Navigator.of(inDialogContext).pop();
-                    }
+                    if (inDialogContext.mounted) Navigator.pop(inDialogContext);
                     await _loadProducts();
                     if (mounted) {
                       ScaffoldMessenger.of(parentContext).showSnackBar(
                         SnackBar(
-                          content: Text(responseMessage),
-                          duration: const Duration(seconds: 2),
-                        ),
+                            content: Text(msg),
+                            duration: const Duration(seconds: 2)),
                       );
                     }
                   } catch (e) {
                     if (inDialogContext.mounted) {
-                      Navigator.of(inDialogContext).pop();
+                      Navigator.pop(inDialogContext);
                       ScaffoldMessenger.of(inDialogContext).showSnackBar(
                         SnackBar(
-                          content: Text(e.toString()),
-                          duration: const Duration(seconds: 2),
-                        ),
+                            content: Text(e.toString()),
+                            duration: const Duration(seconds: 2)),
                       );
                     }
                   }
@@ -659,51 +647,46 @@ class ProductViewState extends State<ProductView> {
     );
   }
 
+  // ───────────────────── удаление ─────────────────────
   Future<void> _confirmDeleteProduct(Product product) async {
-    final bool? confirmed = await showDialog<bool>(
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (alertContext) => AlertDialog(
+      builder: (alert) => AlertDialog(
         title: const Text('Подтверждение'),
         content: Text('Удалить продукт "${product.productName}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(alertContext, false),
-            child: const Text('Отмена'),
-          ),
+              onPressed: () => Navigator.pop(alert, false),
+              child: const Text('Отмена')),
           ElevatedButton(
-            onPressed: () => Navigator.pop(alertContext, true),
-            child: const Text('Удалить'),
-          ),
+              onPressed: () => Navigator.pop(alert, true),
+              child: const Text('Удалить')),
         ],
       ),
     );
     if (confirmed == true) {
       try {
-        final responseMessage = await _presenter.deleteProduct(product);
+        final msg = await _presenter.deleteProduct(product);
         await _loadProducts();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(responseMessage),
-              duration: const Duration(seconds: 2),
-            ),
+            SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
           );
         }
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
-            duration: const Duration(seconds: 2),
-          ),
+              content: Text(e.toString()),
+              duration: const Duration(seconds: 2)),
         );
       }
     }
   }
 
-  // -------------------------------------------------------
-  // Построение виджета для отображения изображения в диалоге
-  // -------------------------------------------------------
+  // ───────────────────────────────────────────────────────────
+  // Виджеты-помощники
+  // ───────────────────────────────────────────────────────────
   Widget _buildDialogImage({
     File? fileImage,
     String? imageUrl,
@@ -718,10 +701,8 @@ class ProductViewState extends State<ProductView> {
         width: width,
         height: height,
         decoration: BoxDecoration(
-          image: DecorationImage(
-            image: FileImage(fileImage),
-            fit: BoxFit.cover,
-          ),
+          image:
+              DecorationImage(image: FileImage(fileImage), fit: BoxFit.cover),
           color: theme.dividerColor,
           borderRadius: BorderRadius.circular(4),
         ),
@@ -734,7 +715,8 @@ class ProductViewState extends State<ProductView> {
           image: DecorationImage(
             image: CachedNetworkImageProvider(
               AppConstants.apiBaseUrl + imageUrl,
-              headers: token != null ? {"Authorization": "Bearer $token"} : null,
+              headers:
+                  token != null ? {"Authorization": "Bearer $token"} : null,
             ),
             fit: BoxFit.cover,
           ),
@@ -747,34 +729,27 @@ class ProductViewState extends State<ProductView> {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: theme.dividerColor,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: showPlaceholder ? const Icon(Icons.image, color: Colors.deepOrange, size: 50) : null,
+          color: theme.dividerColor, borderRadius: BorderRadius.circular(4)),
+      child: showPlaceholder
+          ? const Icon(Icons.image, color: Colors.deepOrange, size: 50)
+          : null,
     );
   }
 
-  // -------------------------------------------------------
-  // Построение Skeleton-карточки для продукции
-  // -------------------------------------------------------
   Widget _buildSkeletonCard() {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         leading: Container(
           width: 60,
           height: 60,
           decoration: BoxDecoration(
-            color: Colors.grey.shade300,
-            borderRadius: BorderRadius.circular(8.0),
-          ),
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(8)),
         ),
         title: Container(
-          width: double.infinity,
-          height: 16,
-          color: Colors.grey.shade300,
-        ),
+            width: double.infinity, height: 16, color: Colors.grey.shade300),
         subtitle: Container(
           margin: const EdgeInsets.only(top: 10),
           width: double.infinity,
@@ -785,45 +760,38 @@ class ProductViewState extends State<ProductView> {
     );
   }
 
-  // -------------------------------------------------------
-  // Построение основного интерфейса
-  // -------------------------------------------------------
+  // ───────────────────────────────────────────────────────────
+  // Основное тело списка
+  // ───────────────────────────────────────────────────────────
   Widget _buildBody(BuildContext context) {
-    final displayedProducts = _products.where((p) {
-      final matchesCategory = _selectedCategoryIds.isEmpty
-          ? true
-          : _selectedCategoryIds.contains(p.productCategory.categoryID);
-      final matchesSearch = _searchQuery.isEmpty
-          ? true
-          : p.productName.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
+    final displayed = _products.where((p) {
+      final matchCat = _selectedCategoryIds.isEmpty ||
+          _selectedCategoryIds.contains(p.productCategory.categoryID);
+      final matchSearch = _searchQuery.isEmpty ||
+          p.productName.toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchCat && matchSearch;
     }).toList();
 
     if (_isLoading) {
       return ListView.builder(
         padding: const EdgeInsets.only(bottom: 80),
         itemCount: 10,
-        itemBuilder: (context, index) => _buildSkeletonCard(),
+        itemBuilder: (_, __) => _buildSkeletonCard(),
       );
     }
 
-    if (displayedProducts.isEmpty) {
+    if (displayed.isEmpty) {
       if (_searchQuery.isNotEmpty) {
-        // Если поиск нечего не дал, выводим сообщение
         return ListView(
           children: [
             const SizedBox(height: 400),
             Center(
-              child: Text(
-                'Нечего не найдено!',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ),
+                child: Text('Нечего не найдено!',
+                    style: Theme.of(context).textTheme.bodyMedium)),
           ],
         );
       }
       if (_selectedCategoryIds.isNotEmpty) {
-        // Если активны фильтры или задан поисковый запрос
         return Center(
           child: RefreshIndicator(
             onRefresh: _loadProducts,
@@ -832,199 +800,160 @@ class ProductViewState extends State<ProductView> {
               padding: const EdgeInsets.only(bottom: 80),
               children: const [
                 SizedBox(height: 400),
-                Center(child: Text('По выбранным фильтрам не найдено продукции.')),
-              ],
-            ),
-          ),
-        );
-      } else {
-        // Если в базе вообще нет данных
-        return Center(
-          child: RefreshIndicator(
-            onRefresh: _loadProducts,
-            color: Theme.of(context).colorScheme.primary,
-            child: ListView(
-              padding: const EdgeInsets.only(bottom: 80),
-              children: [
-                const SizedBox(height: 400),
                 Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Нет продукции. Добавьте новую продукцию.',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _showCreateProductDialog,
-                        child: const Text('Добавить продукцию'),
-                      ),
-                    ],
-                  ),
-                ),
+                    child: Text('По выбранным фильтрам не найдено продукции.')),
               ],
             ),
           ),
         );
       }
+      return Center(
+        child: RefreshIndicator(
+          onRefresh: _loadProducts,
+          color: Theme.of(context).colorScheme.primary,
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 80),
+            children: [
+              const SizedBox(height: 400),
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Нет продукции. Добавьте новую продукцию.',
+                        style: Theme.of(context).textTheme.bodyMedium),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                        onPressed: _showCreateProductDialog,
+                        child: const Text('Добавить')),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return RefreshIndicator(
       onRefresh: _loadProducts,
       child: ListView.builder(
         padding: const EdgeInsets.only(bottom: 80),
-        itemCount: displayedProducts.length,
-        itemBuilder: (context, index) {
-          final product = displayedProducts[index];
-          return _buildProductCard(product);
-        },
+        itemCount: displayed.length,
+        itemBuilder: (_, i) => _buildProductCard(displayed[i]),
       ),
     );
   }
 
-  // -------------------------------------------------------
-  // Построение карточки продукта
-  // -------------------------------------------------------
   Widget _buildProductCard(Product product) {
     final theme = Theme.of(context);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         leading: ClipRRect(
-          borderRadius: BorderRadius.circular(8.0),
+          borderRadius: BorderRadius.circular(8),
           child: CachedNetworkImage(
             imageUrl: AppConstants.apiBaseUrl + product.productImage,
-            httpHeaders: _token != null ? {"Authorization": "Bearer $_token"} : {},
+            httpHeaders:
+                _token != null ? {"Authorization": "Bearer $_token"} : {},
             width: 60,
             height: 60,
             fit: BoxFit.cover,
           ),
         ),
-        title: Text(
-          product.productName,
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
+        title: Text(product.productName,
+            style: theme.textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold)),
         subtitle: Padding(
-          padding: const EdgeInsets.only(top: 10.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.document_scanner, color: Colors.deepOrange, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    product.productBarcode,
-                    style: theme.textTheme.bodySmall?.copyWith(fontSize: 12),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  const Icon(Icons.category, color: Colors.deepOrange, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    product.productCategory.categoryName,
-                    style: theme.textTheme.bodySmall?.copyWith(fontSize: 12),
-                  ),
-                ],
-              ),
-            ],
-          ),
+          padding: const EdgeInsets.only(top: 10),
+          child:
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Row(children: [
+              const Icon(Icons.document_scanner,
+                  color: Colors.deepOrange, size: 16),
+              const SizedBox(width: 4),
+              Text(product.productBarcode,
+                  style: theme.textTheme.bodySmall?.copyWith(fontSize: 12)),
+            ]),
+            Row(children: [
+              const Icon(Icons.category, color: Colors.deepOrange, size: 16),
+              const SizedBox(width: 4),
+              Text(product.productCategory.categoryName,
+                  style: theme.textTheme.bodySmall?.copyWith(fontSize: 12)),
+            ]),
+          ]),
         ),
         onTap: () => _showProductDetails(product),
       ),
     );
   }
 
-  // -------------------------------------------------------
-  // Основной build метода
-  // -------------------------------------------------------
+  // ───────────────────────────────────────────────────────────
+  // Build
+  // ───────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: _isSearching
             ? TextField(
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: "Поиск по продукции...",
-            border: InputBorder.none,
-          ),
-          onChanged: (value) {
-            setState(() {
-              _searchQuery = value;
-            });
-          },
-        )
-            : const Text("Продукция", style: TextStyle(color: Colors.deepOrange)),
+                autofocus: true,
+                decoration: const InputDecoration(
+                    hintText: "Поиск по продукции...",
+                    border: InputBorder.none),
+                onChanged: (v) => setState(() => _searchQuery = v),
+              )
+            : const Text("Продукция",
+                style: TextStyle(color: Colors.deepOrange)),
         actions: _isSearching
             ? [
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.deepOrange),
-            onPressed: _stopSearch,
-          ),
-        ]
+                IconButton(
+                    icon: const Icon(Icons.close, color: Colors.deepOrange),
+                    onPressed: _stopSearch),
+              ]
             : [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.deepOrange),
-            onPressed: _searchStub,
-          ),
-          Stack(
-            children: [
-              IconButton(
-                icon: Icon(
-                  _selectedCategoryIds.isNotEmpty ? Icons.filter_alt : Icons.filter_list,
-                  color: Colors.deepOrange,
-                ),
-                onPressed: _showFilterDialog,
-              ),
-              if (_selectedCategoryIds.isNotEmpty)
-                Positioned(
-                  right: 4,
-                  top: 4,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
+                IconButton(
+                    icon: const Icon(Icons.search, color: Colors.deepOrange),
+                    onPressed: _searchStub),
+                Stack(children: [
+                  IconButton(
+                    icon: Icon(
+                      _selectedCategoryIds.isNotEmpty
+                          ? Icons.filter_alt
+                          : Icons.filter_list,
+                      color: Colors.deepOrange,
                     ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      '${_selectedCategoryIds.length}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
+                    onPressed: _showFilterDialog,
                   ),
-                ),
-            ],
-          ),
-        ],
+                  if (_selectedCategoryIds.isNotEmpty)
+                    Positioned(
+                      right: 4,
+                      top: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                            color: Colors.red, shape: BoxShape.circle),
+                        constraints:
+                            const BoxConstraints(minWidth: 16, minHeight: 16),
+                        child: Text('${_selectedCategoryIds.length}',
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 10),
+                            textAlign: TextAlign.center),
+                      ),
+                    ),
+                ]),
+              ],
       ),
       drawer: const WmsDrawer(),
       body: LayoutBuilder(
-        builder: (context, constraints) {
-          return Center(
-            child: ConstrainedBox(
+        builder: (_, c) => Center(
+          child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 800),
-              child: _buildBody(context),
-            ),
-          );
-        },
+              child: _buildBody(context)),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateProductDialog,
-        child: const Icon(Icons.add),
-      ),
+          onPressed: _showCreateProductDialog, child: const Icon(Icons.add)),
     );
   }
 }

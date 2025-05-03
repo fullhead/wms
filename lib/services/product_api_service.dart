@@ -22,14 +22,14 @@ class ProductAPIService {
     return headers;
   }
 
-  /// Получает список всей продукции.
+  /// Получает список всей продукции (+ названия категорий).
   Future<List<Map<String, dynamic>>> getAllProduct() async {
     final headers = await _getHeaders();
-    final uri = Uri.parse('$baseUrl/products');
+    final uri = Uri.parse('$baseUrl/products?withCategory=true');
     try {
       final response = await http.get(uri, headers: headers);
       if (response.statusCode == 200) {
-        List<dynamic> data = jsonDecode(response.body);
+        final List data = jsonDecode(response.body);
         return data.cast<Map<String, dynamic>>();
       } else {
         final errorData = jsonDecode(response.body);
@@ -40,10 +40,10 @@ class ProductAPIService {
     }
   }
 
-  /// Получает продукт по его ID.
+  /// Получает продукт по его ID (+ название категории).
   Future<Map<String, dynamic>> getProductById(int productId) async {
     final headers = await _getHeaders();
-    final uri = Uri.parse('$baseUrl/products/$productId');
+    final uri = Uri.parse('$baseUrl/products/$productId?withCategory=true');
     try {
       final response = await http.get(uri, headers: headers);
       if (response.statusCode == 200) {

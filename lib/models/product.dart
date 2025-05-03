@@ -15,24 +15,31 @@ class Product {
     required this.productBarcode,
   });
 
-  /// Фабричный конструктор для создания объекта Product из JSON, полученного от API.
-  factory Product.fromJson(Map<String, dynamic> json, Category category) {
-    return Product(
-      productID: json['ProductID'] ?? 0,
-      productCategory: category,
-      productName: json['ProductName'] ?? '',
-      productImage: json['ProductImage'] ?? '',
-      productBarcode: json['ProductBarcode'] ?? '',
-    );
-  }
+  /// Когда категорию получили отдельным запросом.
+  factory Product.fromJson(Map<String, dynamic> json, Category category) =>
+      Product(
+        productID: json['ProductID'] ?? json['productID'] ?? 0,
+        productCategory: category,
+        productName: json['ProductName'] ?? json['productName'] ?? '',
+        productImage: json['ProductImage'] ?? json['productImage'] ?? '',
+        productBarcode: json['ProductBarcode'] ?? json['productBarcode'] ?? '',
+      );
 
-  /// Преобразует объект Product в JSON для отправки на сервер.
-  Map<String, dynamic> toJson() {
-    return {
-      'categoryID': productCategory.categoryID,
-      'productName': productName,
-      'productImage': productImage,
-      'productBarcode': productBarcode,
-    };
-  }
+  /// Когда бэк вернул продукты сразу с категорией (`?withCategory=true`).
+  factory Product.fromJsonWithCategory(Map<String, dynamic> json) =>
+      Product(
+        productID: json['ProductID'] ?? json['productID'] ?? 0,
+        productCategory: Category.fromJson(json),
+        productName: json['ProductName'] ?? json['productName'] ?? '',
+        productImage: json['ProductImage'] ?? json['productImage'] ?? '',
+        productBarcode: json['ProductBarcode'] ?? json['productBarcode'] ?? '',
+      );
+
+  /// JSON для POST/PUT на сервер.
+  Map<String, dynamic> toJson() => {
+    'categoryID': productCategory.categoryID,
+    'productName': productName,
+    'productImage': productImage,
+    'productBarcode': productBarcode,
+  };
 }
