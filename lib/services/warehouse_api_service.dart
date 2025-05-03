@@ -22,89 +22,35 @@ class WarehouseAPIService {
     return headers;
   }
 
-  /// Получает список всех записей склада.
+  /// Получает список всех записей склада (уже с деталями).
   Future<List<Map<String, dynamic>>> getAllWarehouse() async {
     final headers = await _getHeaders();
-    final uri = Uri.parse('$baseUrl/warehouse');
+    final uri = Uri.parse('$baseUrl/warehouse?withDetails=true');
     try {
       final response = await http.get(uri, headers: headers);
       if (response.statusCode == 200) {
-        List<dynamic> data = jsonDecode(response.body);
+        final data = jsonDecode(response.body) as List;
         return data.cast<Map<String, dynamic>>();
       } else {
-        final errorData = jsonDecode(response.body);
-        throw ApiException(errorData['error'] ?? 'Ошибка при получении данных склада');
+        final error = jsonDecode(response.body);
+        throw ApiException(error['error'] ?? 'Неизвестная ошибка при получении склада');
       }
     } catch (e) {
       rethrow;
     }
   }
 
-  /// Получает данные склада по его ID.
-  Future<Map<String, dynamic>> getWarehouseById(int warehouseId) async {
+  /// Получает конкретную запись склада по ID (с деталями).
+  Future<Map<String, dynamic>> getWarehouseById(int id) async {
     final headers = await _getHeaders();
-    final uri = Uri.parse('$baseUrl/warehouse/$warehouseId');
+    final uri = Uri.parse('$baseUrl/warehouse/$id?withDetails=true');
     try {
       final response = await http.get(uri, headers: headers);
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       } else {
-        final errorData = jsonDecode(response.body);
-        throw ApiException(errorData['error'] ?? 'Ошибка при получении записи склада');
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// Создает новую запись склада.
-  Future<String> createWarehouse(Map<String, dynamic> warehouseMap) async {
-    final headers = await _getHeaders();
-    final uri = Uri.parse('$baseUrl/warehouse');
-    try {
-      final response = await http.post(uri, headers: headers, body: jsonEncode(warehouseMap));
-      if (response.statusCode == 201) {
-        final data = jsonDecode(response.body);
-        return data['message'] ?? 'Запись склада создана';
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw ApiException(errorData['error'] ?? 'Ошибка при создании записи склада');
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// Обновляет данные склада.
-  Future<String> updateWarehouse(Map<String, dynamic> warehouseMap, int warehouseId) async {
-    final headers = await _getHeaders();
-    final uri = Uri.parse('$baseUrl/warehouse/$warehouseId');
-    try {
-      final response = await http.put(uri, headers: headers, body: jsonEncode(warehouseMap));
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['message'] ?? 'Запись склада обновлена';
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw ApiException(errorData['error'] ?? 'Ошибка при обновлении записи склада');
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// Удаляет запись склада по его ID.
-  Future<String> deleteWarehouse(int warehouseId) async {
-    final headers = await _getHeaders();
-    final uri = Uri.parse('$baseUrl/warehouse/$warehouseId');
-    try {
-      final response = await http.delete(uri, headers: headers);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['message'] ?? 'Запись склада удалена';
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw ApiException(errorData['error'] ?? 'Ошибка при удалении записи склада');
+        final error = jsonDecode(response.body);
+        throw ApiException(error['error'] ?? 'Неизвестная ошибка при получении склада по ID');
       }
     } catch (e) {
       rethrow;

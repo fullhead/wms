@@ -3,23 +3,17 @@ import 'package:wms/models/warehouse.dart';
 import 'package:wms/repositories/warehouse_repository.dart';
 import 'package:wms/services/warehouse_api_service.dart';
 
-/// Презентер для управления складом.
+/// Презентер для управления данными склада.
 class WarehousePresenter {
-  final WarehouseRepository _warehouseRepository;
+  final WarehouseRepository _repo =
+  WarehouseRepository(baseUrl: AppConstants.apiBaseUrl);
 
-  WarehousePresenter({WarehouseRepository? warehouseRepository})
-      : _warehouseRepository = warehouseRepository ?? WarehouseRepository(baseUrl: AppConstants.apiBaseUrl);
+  /// Доступ к WarehouseAPIService
+  WarehouseAPIService get warehouseApiService => _repo.warehouseAPIService;
 
-  /// Геттер для доступа к WarehouseAPIService.
-  WarehouseAPIService get warehouseApiService => _warehouseRepository.warehouseAPIService;
+  /// Список всех складских позиций.
+  Future<List<Warehouse>> fetchAllWarehouse() => _repo.getAllWarehouse();
 
-  /// Получает список всех записей склада.
-  Future<List<Warehouse>> fetchAllWarehouse() {
-    return _warehouseRepository.getAllWarehouse();
-  }
-
-  /// Получает запись склада по его ID.
-  Future<Warehouse> fetchWarehouseById(int warehouseId) {
-    return _warehouseRepository.getWarehouseById(warehouseId);
-  }
+  /// Запись склада по ID.
+  Future<Warehouse> fetchWarehouseById(int id) => _repo.getWarehouseById(id);
 }
