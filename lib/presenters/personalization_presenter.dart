@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:wms/models/user.dart';
 import 'package:wms/repositories/user_repository.dart';
 import 'package:wms/core/constants.dart';
@@ -32,9 +33,23 @@ class PersonalizationPresenter {
     return await _userRepository.getUserById(userID);
   }
 
-  /// Обновляет аватар пользователя, используя новый файл.
-  Future<String> updateAvatar(User user, String avatarImagePath) async {
-    final String newAvatarPath = await _userPresenter.setUserAvatar(user.userID, avatarImagePath);
+/*─────────────────────────────────────────────────────────
+ |  Обновить аватар (Mobile + Web)
+ |  • Mobile – imagePath
+ |  • Web    – bytes + filename
+ ─────────────────────────────────────────────────────────*/
+  Future<String> updateAvatar(
+      User user, {
+        String? imagePath,
+        Uint8List? bytes,
+        String? filename,
+      }) async {
+    final String newAvatarPath = await _userPresenter.setUserAvatar(
+      user.userID,
+      imagePath: imagePath,
+      bytes: bytes,
+      filename: filename,
+    );
     user.userAvatar = newAvatarPath;
     await AuthStorage.saveUserAvatar(newAvatarPath);
     return await _userPresenter.updateUser(user);

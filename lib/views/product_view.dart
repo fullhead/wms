@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:barcode_scan2/barcode_scan2.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -59,9 +60,7 @@ class ProductViewState extends State<ProductView> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text("Ошибка загрузки: $e"),
-            duration: const Duration(seconds: 2)),
+        SnackBar(content: Text("Ошибка загрузки: $e")),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -76,9 +75,10 @@ class ProductViewState extends State<ProductView> {
     return data.map((json) => Category.fromJson(json)).toList();
   }
 
-  Future<File?> _showImageSourceSelectionDialog(
+  /// Диалог выбора источника изображения ― всегда возвращает [XFile?]
+  Future<XFile?> _showImageSourceSelectionDialog(
       BuildContext dialogContext) async {
-    return showModalBottomSheet<File?>(
+    return showModalBottomSheet<XFile?>(
       context: dialogContext,
       builder: (context) => SafeArea(
         child: Column(
@@ -92,8 +92,7 @@ class ProductViewState extends State<ProductView> {
                 final pickedFile =
                     await _picker.pickImage(source: ImageSource.gallery);
                 if (!mounted) return;
-                Navigator.pop(
-                    context, pickedFile != null ? File(pickedFile.path) : null);
+                Navigator.pop(context, pickedFile);
               },
             ),
             ListTile(
@@ -104,8 +103,7 @@ class ProductViewState extends State<ProductView> {
                 final pickedFile =
                     await _picker.pickImage(source: ImageSource.camera);
                 if (!mounted) return;
-                Navigator.pop(
-                    context, pickedFile != null ? File(pickedFile.path) : null);
+                Navigator.pop(context, pickedFile);
               },
             ),
           ],
@@ -146,10 +144,13 @@ class ProductViewState extends State<ProductView> {
             children: [
               Icon(
                 tempSelected.isNotEmpty ? Icons.filter_alt : Icons.filter_list,
-                color: tempSelected.isNotEmpty ? Theme.of(dialogContext).colorScheme.primary : null,
+                color: tempSelected.isNotEmpty
+                    ? Theme.of(dialogContext).colorScheme.primary
+                    : null,
               ),
               const SizedBox(width: 4),
-              Text('По категориям${tempSelected.isNotEmpty ? ' (${tempSelected.length})' : ''}'),
+              Text(
+                  'По категориям${tempSelected.isNotEmpty ? ' (${tempSelected.length})' : ''}'),
             ],
           ),
           content: SizedBox(
@@ -203,20 +204,102 @@ class ProductViewState extends State<ProductView> {
   }
 
   // ───────────────────────────────────────────────────────────
+  // Виджеты-помощники
+  // ───────────────────────────────────────────────────────────
+  Widget _buildDialogImage({
+    Uint8List? localBytes,
+    String? imageUrl,
+    String? token,
+    bool showPlaceholder = false,
+    double width = 250,
+    double height = 250,
+  }) {
+    final theme = Theme.of(context);
+
+    // локально выбранная картинка
+    if (localBytes != null) {
+      return Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+              image: MemoryImage(localBytes), fit: BoxFit.cover),
+          color: theme.dividerColor,
+          borderRadius: BorderRadius.circular(4),
+        ),
+      );
+    }
+
+    // картинка с сервера
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      return Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: CachedNetworkImageProvider(
+              AppConstants.apiBaseUrl + imageUrl,
+              headers:
+                  token != null ? {"Authorization": "Bearer $token"} : null,
+            ),
+            fit: BoxFit.cover,
+          ),
+          color: theme.dividerColor,
+          borderRadius: BorderRadius.circular(4),
+        ),
+      );
+    }
+
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+          color: theme.dividerColor, borderRadius: BorderRadius.circular(4)),
+      child: showPlaceholder
+          ? const Icon(Icons.image, color: Colors.deepOrange, size: 50)
+          : null,
+    );
+  }
+
+  Widget _buildSkeletonCard() {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        leading: Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(8)),
+        ),
+        title: Container(
+            width: double.infinity, height: 16, color: Colors.grey.shade300),
+        subtitle: Container(
+          margin: const EdgeInsets.only(top: 10),
+          width: double.infinity,
+          height: 14,
+          color: Colors.grey.shade300,
+        ),
+      ),
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────
   // Диалоги: детали / редактирование / создание / удаление
   // ───────────────────────────────────────────────────────────
   void _showProductDetails(Product product) {
     final theme = Theme.of(context);
+    final size = MediaQuery.of(context).size;
+    final isDesktop = size.width > 800;
+    final dialogWidth = isDesktop ? size.width * 0.5 : size.width * 0.9;
+    final dialogHeight = isDesktop ? size.height * 0.6 : size.height * 0.46;
+    final imageSize = isDesktop ? 600.0 : 280.0;
+
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (ctx) {
-        final size = MediaQuery.of(ctx).size;
-        final isDesktop = size.width > 800;
-        final dialogWidth = isDesktop ? size.width * 0.5 : size.width * 0.9;
-        final dialogHeight = isDesktop ? size.height * 0.6 : size.height * 0.46;
-        final imageSize = isDesktop ? 750.0 : 350.0;
-
         return AlertDialog(
           insetPadding: EdgeInsets.zero,
           contentPadding: const EdgeInsets.all(10),
@@ -244,7 +327,6 @@ class ProductViewState extends State<ProductView> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _buildDialogImage(
-                    fileImage: null,
                     imageUrl: product.productImage,
                     token: _token,
                     width: imageSize,
@@ -259,15 +341,21 @@ class ProductViewState extends State<ProductView> {
                           Navigator.pop(ctx);
                           _showEditProductDialog(product);
                         },
-                        icon: Icon(Icons.edit, color: theme.colorScheme.secondary),
-                        label: Text("Редактировать", style: TextStyle(color: theme.colorScheme.secondary)),
+                        icon: Icon(Icons.edit,
+                            color: theme.colorScheme.secondary),
+                        label: Text("Редактировать",
+                            style:
+                                TextStyle(color: theme.colorScheme.secondary)),
                       ),
                       TextButton.icon(
-                        onPressed: () {Navigator.pop(ctx);
+                        onPressed: () {
+                          Navigator.pop(ctx);
                           _confirmDeleteProduct(product);
                         },
-                        icon: Icon(Icons.delete, color: theme.colorScheme.error),
-                        label: Text("Удалить", style: TextStyle(color: theme.colorScheme.error)),
+                        icon:
+                            Icon(Icons.delete, color: theme.colorScheme.error),
+                        label: Text("Удалить",
+                            style: TextStyle(color: theme.colorScheme.error)),
                       ),
                     ],
                   ),
@@ -288,7 +376,8 @@ class ProductViewState extends State<ProductView> {
     String editedName = product.productName;
     String editedBarcode = product.productBarcode;
     Category? editedCategory = product.productCategory;
-    File? editedImage;
+    XFile? editedImage;
+    Uint8List? editedBytes;
     List<Category> allCategories = [];
 
     try {
@@ -303,9 +392,7 @@ class ProductViewState extends State<ProductView> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text("Ошибка загрузки категорий: $e"),
-            duration: const Duration(seconds: 2)),
+        SnackBar(content: Text("Ошибка загрузки категорий: $e")),
       );
       return;
     }
@@ -344,11 +431,12 @@ class ProductViewState extends State<ProductView> {
                                     inDialogContext);
                             if (result != null) {
                               editedImage = result;
+                              editedBytes = await result.readAsBytes();
                               setStateDialog(() {});
                             }
                           },
                           child: _buildDialogImage(
-                            fileImage: editedImage,
+                            localBytes: editedBytes,
                             imageUrl: product.productImage,
                             token: _token,
                             width: double.infinity,
@@ -363,6 +451,7 @@ class ProductViewState extends State<ProductView> {
                                     inDialogContext);
                             if (result != null) {
                               editedImage = result;
+                              editedBytes = await result.readAsBytes();
                               setStateDialog(() {});
                             }
                           },
@@ -430,8 +519,16 @@ class ProductViewState extends State<ProductView> {
                   try {
                     String imagePath = product.productImage;
                     if (editedImage != null) {
-                      imagePath = await _presenter.productApiService
-                          .uploadProductImage(editedImage!.path);
+                      imagePath = kIsWeb
+                          ? await _presenter.productApiService
+                              .uploadProductImage(
+                              bytes: editedBytes!,
+                              filename: editedImage!.name,
+                            )
+                          : await _presenter.productApiService
+                              .uploadProductImage(
+                              imagePath: editedImage!.path,
+                            );
                     }
                     product
                       ..productName = editedName
@@ -443,18 +540,14 @@ class ProductViewState extends State<ProductView> {
                     await _loadProducts();
                     if (mounted) {
                       ScaffoldMessenger.of(parentContext).showSnackBar(
-                        SnackBar(
-                            content: Text(msg),
-                            duration: const Duration(seconds: 2)),
+                        SnackBar(content: Text(msg)),
                       );
                     }
                   } catch (e) {
                     if (inDialogContext.mounted) {
                       Navigator.pop(inDialogContext);
                       ScaffoldMessenger.of(inDialogContext).showSnackBar(
-                        SnackBar(
-                            content: Text(e.toString()),
-                            duration: const Duration(seconds: 2)),
+                        SnackBar(content: Text(e.toString())),
                       );
                     }
                   }
@@ -476,7 +569,8 @@ class ProductViewState extends State<ProductView> {
 
     String newName = '';
     Category? newCategory;
-    File? newImage;
+    XFile? newImage;
+    Uint8List? newBytes;
     List<Category> allCategories = [];
 
     try {
@@ -485,9 +579,7 @@ class ProductViewState extends State<ProductView> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text("Ошибка при загрузке категорий: $e"),
-            duration: const Duration(seconds: 2)),
+        SnackBar(content: Text("Ошибка загрузки категорий: $e")),
       );
       return;
     }
@@ -524,15 +616,16 @@ class ProductViewState extends State<ProductView> {
                                     inDialogContext);
                             if (result != null) {
                               newImage = result;
+                              newBytes = await result.readAsBytes();
                               setStateDialog(() {});
                             }
                           },
                           child: _buildDialogImage(
-                            fileImage: newImage,
+                            localBytes: newBytes,
                             imageUrl: "",
+                            showPlaceholder: true,
                             width: isDesktop ? 300 : 250,
                             height: isDesktop ? 300 : 250,
-                            showPlaceholder: true,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -543,6 +636,7 @@ class ProductViewState extends State<ProductView> {
                                     inDialogContext);
                             if (result != null) {
                               newImage = result;
+                              newBytes = await result.readAsBytes();
                               setStateDialog(() {});
                             }
                           },
@@ -609,8 +703,16 @@ class ProductViewState extends State<ProductView> {
                   try {
                     String imagePath = '';
                     if (newImage != null) {
-                      imagePath = await _presenter.productApiService
-                          .uploadProductImage(newImage!.path);
+                      imagePath = kIsWeb
+                          ? await _presenter.productApiService
+                              .uploadProductImage(
+                              bytes: newBytes!,
+                              filename: newImage!.name,
+                            )
+                          : await _presenter.productApiService
+                              .uploadProductImage(
+                              imagePath: newImage!.path,
+                            );
                     }
                     final msg = await _presenter.createProduct(
                       category: newCategory!,
@@ -622,18 +724,14 @@ class ProductViewState extends State<ProductView> {
                     await _loadProducts();
                     if (mounted) {
                       ScaffoldMessenger.of(parentContext).showSnackBar(
-                        SnackBar(
-                            content: Text(msg),
-                            duration: const Duration(seconds: 2)),
+                        SnackBar(content: Text(msg)),
                       );
                     }
                   } catch (e) {
                     if (inDialogContext.mounted) {
                       Navigator.pop(inDialogContext);
                       ScaffoldMessenger.of(inDialogContext).showSnackBar(
-                        SnackBar(
-                            content: Text(e.toString()),
-                            duration: const Duration(seconds: 2)),
+                        SnackBar(content: Text(e.toString())),
                       );
                     }
                   }
@@ -670,94 +768,16 @@ class ProductViewState extends State<ProductView> {
         await _loadProducts();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
+            SnackBar(content: Text(msg)),
           );
         }
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(e.toString()),
-              duration: const Duration(seconds: 2)),
+          SnackBar(content: Text(e.toString())),
         );
       }
     }
-  }
-
-  // ───────────────────────────────────────────────────────────
-  // Виджеты-помощники
-  // ───────────────────────────────────────────────────────────
-  Widget _buildDialogImage({
-    File? fileImage,
-    String? imageUrl,
-    String? token,
-    bool showPlaceholder = false,
-    double width = 250,
-    double height = 250,
-  }) {
-    final theme = Theme.of(context);
-    if (fileImage != null) {
-      return Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          image:
-              DecorationImage(image: FileImage(fileImage), fit: BoxFit.cover),
-          color: theme.dividerColor,
-          borderRadius: BorderRadius.circular(4),
-        ),
-      );
-    } else if (imageUrl != null && imageUrl.isNotEmpty) {
-      return Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: CachedNetworkImageProvider(
-              AppConstants.apiBaseUrl + imageUrl,
-              headers:
-                  token != null ? {"Authorization": "Bearer $token"} : null,
-            ),
-            fit: BoxFit.cover,
-          ),
-          color: theme.dividerColor,
-          borderRadius: BorderRadius.circular(4),
-        ),
-      );
-    }
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-          color: theme.dividerColor, borderRadius: BorderRadius.circular(4)),
-      child: showPlaceholder
-          ? const Icon(Icons.image, color: Colors.deepOrange, size: 50)
-          : null,
-    );
-  }
-
-  Widget _buildSkeletonCard() {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        leading: Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(8)),
-        ),
-        title: Container(
-            width: double.infinity, height: 16, color: Colors.grey.shade300),
-        subtitle: Container(
-          margin: const EdgeInsets.only(top: 10),
-          width: double.infinity,
-          height: 14,
-          color: Colors.grey.shade300,
-        ),
-      ),
-    );
   }
 
   // ───────────────────────────────────────────────────────────
@@ -786,7 +806,7 @@ class ProductViewState extends State<ProductView> {
           children: [
             const SizedBox(height: 400),
             Center(
-                child: Text('Нечего не найдено!',
+                child: Text('Ничего не найдено!',
                     style: Theme.of(context).textTheme.bodyMedium)),
           ],
         );

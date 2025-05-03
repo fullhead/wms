@@ -242,8 +242,8 @@ class IssueDialogs {
         final size = MediaQuery.of(ctx).size;
         final isDesktop = size.width > 800;
         final dialogWidth = isDesktop ? size.width * 0.4 : size.width * 0.9;
-        final dialogHeight = size.height * 0.75;
-        final imageSize = isDesktop ? 650.0 : 350.0;
+        final dialogHeight = size.height * 0.65;
+        final imageSize = isDesktop ? 600.0 : 250.0;
         return AlertDialog(
           insetPadding: EdgeInsets.zero,
           contentPadding: const EdgeInsets.all(10),

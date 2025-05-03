@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:wms/core/constants.dart';
 import 'package:wms/models/user.dart';
 import 'package:wms/models/group.dart';
@@ -24,8 +25,21 @@ class UserPresenter {
     return await _userRepository.getAllUsers();
   }
 
-  /// Создает нового пользователя.
-  Future<String> createUser({required String fullName, required String username, required String password, required Group group, String? avatarFilePath, bool status = true}) async {
+  /*─────────────────────────────────────────────────────────
+   |  Создать пользователя (Mobile + Web)
+   |  • Mobile – avatarFilePath
+   |  • Web    – bytes + filename
+   ─────────────────────────────────────────────────────────*/
+  Future<String> createUser({
+    required String fullName,
+    required String username,
+    required String password,
+    required Group group,
+    String? avatarFilePath,
+    Uint8List? bytes,
+    String? filename,
+    bool status = true,
+  }) async {
     final newUser = User(
       userID: 0,
       userFullname: fullName,
@@ -37,7 +51,12 @@ class UserPresenter {
       userCreationDate: DateTime.now(),
       userLastLoginDate: DateTime.now(),
     );
-    return await _userRepository.createUser(newUser, avatarFilePath: avatarFilePath);
+    return await _userRepository.createUser(
+      newUser,
+      avatarFilePath: avatarFilePath,
+      bytes: bytes,
+      filename: filename,
+    );
   }
 
   /// Обновляет данные пользователя.
@@ -60,9 +79,23 @@ class UserPresenter {
     return await _userRepository.deleteUser(user.userID);
   }
 
-  /// Устанавливает новый аватар для пользователя.
-  Future<String> setUserAvatar(int userId, String imagePath) async {
-    return await _userRepository.setUserAvatar(userId, imagePath);
+  /*─────────────────────────────────────────────────────────
+   |  Установить/заменить аватар (Mobile + Web)
+   |  • Mobile – imagePath
+   |  • Web    – bytes + filename
+   ─────────────────────────────────────────────────────────*/
+  Future<String> setUserAvatar(
+      int userId, {
+        String? imagePath,
+        Uint8List? bytes,
+        String? filename,
+      }) async {
+    return await _userRepository.setUserAvatar(
+      userId,
+      imagePath: imagePath,
+      bytes: bytes,
+      filename: filename,
+    );
   }
 
   /// Получает URL аватара пользователя.

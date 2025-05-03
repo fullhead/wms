@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -16,9 +17,9 @@ class PersonalizationView extends StatefulWidget {
 }
 
 class PersonalizationViewState extends State<PersonalizationView> {
-  // -------------------------------------------------------
+  // ───────────────────────────────────────────────────────────
   // Поля
-  // -------------------------------------------------------
+  // ───────────────────────────────────────────────────────────
   final _presenter = PersonalizationPresenter();
   final _formKey = GlobalKey<FormState>();
 
@@ -28,12 +29,13 @@ class PersonalizationViewState extends State<PersonalizationView> {
 
   User? _currentUser;
   bool _isLoading = false;
-  File? _newAvatarImage;
-  String? _token; // access token
+  XFile? _newAvatarImage;
+  Uint8List? _newAvatarBytes;
+  String? _token;
 
-  // -------------------------------------------------------
+  // ───────────────────────────────────────────────────────────
   // Жизненный цикл
-  // -------------------------------------------------------
+  // ───────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
@@ -50,9 +52,9 @@ class PersonalizationViewState extends State<PersonalizationView> {
     super.dispose();
   }
 
-  // -------------------------------------------------------
+  // ───────────────────────────────────────────────────────────
   // Загрузка текущего пользователя и токена
-  // -------------------------------------------------------
+  // ───────────────────────────────────────────────────────────
   Future<void> _loadToken() async {
     _token = await AuthStorage.getAccessToken();
     if (mounted) setState(() {});
@@ -77,6 +79,9 @@ class PersonalizationViewState extends State<PersonalizationView> {
     }
   }
 
+  // ───────────────────────────────────────────────────────────
+  // Сохранение изменений
+  // ───────────────────────────────────────────────────────────
   Future<void> _saveChanges() async {
     if (_currentUser == null) return;
 
@@ -95,13 +100,26 @@ class PersonalizationViewState extends State<PersonalizationView> {
     setState(() => _isLoading = true);
     try {
       if (isAvatarChanged) {
-        await _presenter.updateAvatar(_currentUser!, _newAvatarImage!.path);
+        if (kIsWeb) {
+          await _presenter.updateAvatar(
+            _currentUser!,
+            bytes: _newAvatarBytes!,
+            filename: _newAvatarImage!.name,
+          );
+        } else {
+          await _presenter.updateAvatar(
+            _currentUser!,
+            imagePath: _newAvatarImage!.path,
+          );
+        }
       }
       if (isLoginChanged) {
-        await _presenter.updateLogin(_currentUser!, _loginController.text.trim());
+        await _presenter.updateLogin(
+            _currentUser!, _loginController.text.trim());
       }
       if (isPasswordChanged) {
-        await _presenter.updatePassword(_currentUser!, _passwordController.text.trim());
+        await _presenter.updatePassword(
+            _currentUser!, _passwordController.text.trim());
       }
 
       if (mounted) {
@@ -112,6 +130,7 @@ class PersonalizationViewState extends State<PersonalizationView> {
         _passwordController.clear();
         setState(() {
           _newAvatarImage = null;
+          _newAvatarBytes = null;
         });
       }
     } catch (e) {
@@ -132,16 +151,16 @@ class PersonalizationViewState extends State<PersonalizationView> {
         _passwordController.text.trim().isNotEmpty;
   }
 
-  // -------------------------------------------------------
+  // ───────────────────────────────────────────────────────────
   // Методы выбора / загрузки изображения
-  // -------------------------------------------------------
-  Future<File?> _pickImage(ImageSource source) async {
+  // ───────────────────────────────────────────────────────────
+  Future<XFile?> _pickImage(ImageSource source) async {
     final pickedFile = await _picker.pickImage(source: source);
-    return pickedFile != null ? File(pickedFile.path) : null;
+    return pickedFile;
   }
 
   Future<void> _selectAvatarImage() async {
-    final selected = await showModalBottomSheet<File?>(
+    final selected = await showModalBottomSheet<XFile?>(
       context: context,
       builder: (context) {
         return SafeArea(
@@ -149,7 +168,8 @@ class PersonalizationViewState extends State<PersonalizationView> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.photo_library, color: Colors.deepOrange),
+                leading:
+                    const Icon(Icons.photo_library, color: Colors.deepOrange),
                 title: const Text('Выбрать из галереи'),
                 onTap: () async {
                   final image = await _pickImage(ImageSource.gallery);
@@ -157,7 +177,8 @@ class PersonalizationViewState extends State<PersonalizationView> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_camera, color: Colors.deepOrange),
+                leading:
+                    const Icon(Icons.photo_camera, color: Colors.deepOrange),
                 title: const Text('Сделать фото'),
                 onTap: () async {
                   final image = await _pickImage(ImageSource.camera);
@@ -170,13 +191,17 @@ class PersonalizationViewState extends State<PersonalizationView> {
       },
     );
     if (selected != null) {
-      setState(() => _newAvatarImage = selected);
+      final bytes = await selected.readAsBytes();
+      setState(() {
+        _newAvatarImage = selected;
+        _newAvatarBytes = bytes;
+      });
     }
   }
 
-  // -------------------------------------------------------
+  // ───────────────────────────────────────────────────────────
   // Построение интерфейса
-  // -------------------------------------------------------
+  // ───────────────────────────────────────────────────────────
   Widget _buildBody(BoxConstraints constraints) {
     if (_isLoading) {
       return _buildSkeleton();
@@ -218,7 +243,6 @@ class PersonalizationViewState extends State<PersonalizationView> {
   }
 
   Widget _buildSkeleton() {
-    // Скелетон для аватара и полей
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -261,25 +285,31 @@ class PersonalizationViewState extends State<PersonalizationView> {
 
   Widget _buildAvatar(double radius) {
     final avatarUrl = _currentUser?.userAvatar;
-    final defaultAvatarUrl = '${AppConstants.apiBaseUrl}/assets/user/no_image_user.png';
+    final defaultAvatarUrl =
+        '${AppConstants.apiBaseUrl}/assets/user/no_image_user.png';
+
+    ImageProvider imageProvider;
+    if (_newAvatarBytes != null) {
+      imageProvider = MemoryImage(_newAvatarBytes!);
+    } else if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      imageProvider = CachedNetworkImageProvider(
+        avatarUrl.startsWith('/')
+            ? '${AppConstants.apiBaseUrl}$avatarUrl'
+            : avatarUrl,
+        headers: _token != null ? {"Authorization": "Bearer $_token"} : null,
+      );
+    } else {
+      imageProvider = CachedNetworkImageProvider(
+        defaultAvatarUrl,
+        headers: _token != null ? {"Authorization": "Bearer $_token"} : null,
+      );
+    }
 
     return GestureDetector(
       onTap: _selectAvatarImage,
       child: CircleAvatar(
         radius: radius,
-        backgroundImage: _newAvatarImage != null
-            ? FileImage(_newAvatarImage!)
-            : (avatarUrl != null && avatarUrl.isNotEmpty
-            ? CachedNetworkImageProvider(
-          avatarUrl.startsWith('/')
-              ? '${AppConstants.apiBaseUrl}$avatarUrl'
-              : avatarUrl,
-          headers: _token != null ? {"Authorization": "Bearer $_token"} : null,
-        )
-            : CachedNetworkImageProvider(
-          defaultAvatarUrl,
-          headers: _token != null ? {"Authorization": "Bearer $_token"} : null,
-        )),
+        backgroundImage: imageProvider,
       ),
     );
   }
@@ -320,10 +350,7 @@ class PersonalizationViewState extends State<PersonalizationView> {
       drawer: const WmsDrawer(),
       body: RefreshIndicator(
         onRefresh: _loadCurrentUser,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return _buildBody(constraints);
-          },
+        child: LayoutBuilder(builder: (context, constraints) => _buildBody(constraints),
         ),
       ),
     );

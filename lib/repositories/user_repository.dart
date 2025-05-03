@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:wms/models/user.dart';
 import 'package:wms/models/group.dart';
 import 'package:wms/services/user_api_service.dart';
@@ -41,10 +42,24 @@ class UserRepository {
     return User.fromJson(userMap, group);
   }
 
-  /// Создает нового пользователя.
-  Future<String> createUser(User user, {String? avatarFilePath}) async {
+  /*─────────────────────────────────────────────────────────
+   |  Создать пользователя (поддержка Mobile + Web)
+   |  • Mobile – avatarFilePath
+   |  • Web    – bytes + filename
+   ─────────────────────────────────────────────────────────*/
+  Future<String> createUser(
+      User user, {
+        String? avatarFilePath,
+        Uint8List? bytes,
+        String? filename,
+      }) async {
     await _sessionManager.validateSession();
-    return await userAPIService.createUser(user.toJson(), avatarFilePath: avatarFilePath);
+    return await userAPIService.createUser(
+      user.toJson(),
+      avatarFilePath: avatarFilePath,
+      bytes: bytes,
+      filename: filename,
+    );
   }
 
   /// Обновляет данные пользователя.
@@ -59,10 +74,24 @@ class UserRepository {
     return await userAPIService.deleteUser(userID);
   }
 
-  /// Устанавливает новый аватар для пользователя.
-  Future<String> setUserAvatar(int userId, String imagePath) async {
+  /*─────────────────────────────────────────────────────────
+   |  Установить/заменить аватар (Mobile + Web)
+   |  • Mobile – imagePath
+   |  • Web    – bytes + filename
+   ─────────────────────────────────────────────────────────*/
+  Future<String> setUserAvatar(
+      int userId, {
+        String? imagePath,
+        Uint8List? bytes,
+        String? filename,
+      }) async {
     await _sessionManager.validateSession();
-    return await userAPIService.setUserAvatar(userId, imagePath);
+    return await userAPIService.setUserAvatar(
+      userId,
+      imagePath: imagePath,
+      bytes: bytes,
+      filename: filename,
+    );
   }
 
   /// Получает URL аватара пользователя.

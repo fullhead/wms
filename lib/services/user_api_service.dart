@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:wms/core/session/auth_storage.dart';
 import 'package:wms/core/utils.dart';
@@ -58,46 +60,70 @@ class UserAPIService {
     }
   }
 
-  /// Создает нового пользователя. Если передан avatarFilePath – используется multipart-запрос, иначе JSON.
-  Future<String> createUser(Map<String, dynamic> userMap, {String? avatarFilePath}) async {
+/*─────────────────────────────────────────────────────────
+ |  Создание пользователя (универсальная загрузка аватара)
+ |  • Mobile – avatarFilePath
+ |  • Web    – bytes + filename
+ ─────────────────────────────────────────────────────────*/
+  Future<String> createUser(Map<String, dynamic> userMap, {String? avatarFilePath, Uint8List? bytes, String? filename,}) async {
     final uri = Uri.parse('$baseUrl/users');
-    if (avatarFilePath != null && avatarFilePath.isNotEmpty) {
-      // Multipart-запрос с файлом аватара
-      final request = http.MultipartRequest('POST', uri);
-      request.headers.addAll(await _getHeaders(auth: true, isMultipart: true));
-      userMap.forEach((key, value) {
-        request.fields[key] = value.toString();
-      });
-      request.files.add(await http.MultipartFile.fromPath('avatar', avatarFilePath));
-      try {
-        final streamedResponse = await request.send();
-        final response = await http.Response.fromStream(streamedResponse);
-        if (response.statusCode == 201) {
-          final data = jsonDecode(response.body);
-          return data['message'] ?? 'Пользователь создан';
-        } else {
-          final errorData = jsonDecode(response.body);
-          throw ApiException(errorData['error'] ?? 'Ошибка при создании пользователя');
-        }
-      } catch (e) {
-        rethrow;
+
+    // определяем, нужен ли multipart
+    final needMultipart = kIsWeb
+        ? (bytes != null && filename != null)
+        : (avatarFilePath != null && avatarFilePath.isNotEmpty);
+
+    // ─── compile-time + runtime валидация (только если файл нужен)
+    assert(
+    !needMultipart ||
+        (kIsWeb
+            ? (bytes != null && filename != null)
+            : (avatarFilePath != null && avatarFilePath.isNotEmpty)),
+    'Неверные параметры для multipart-запроса',
+    );
+    if (needMultipart) {
+      if (kIsWeb && (bytes == null || filename == null)) {
+        throw ArgumentError(
+            'Для Web необходимо передать одновременно [bytes] и [filename].');
       }
-    } else {
-      // JSON-запрос без файла
-      final headers = await _getHeaders();
-      try {
-        final response = await http.post(uri, headers: headers, body: jsonEncode(userMap));
-        if (response.statusCode == 201) {
-          final data = jsonDecode(response.body);
-          return data['message'] ?? 'Пользователь создан';
-        } else {
-          final errorData = jsonDecode(response.body);
-          throw ApiException(errorData['error'] ?? 'Ошибка при создании пользователя');
-        }
-      } catch (e) {
-        rethrow;
+      if (!kIsWeb &&
+          (avatarFilePath == null || avatarFilePath.isEmpty)) {
+        throw ArgumentError(
+            'Для Mobile необходимо передать непустой [avatarFilePath].');
       }
     }
+
+    // ─── JSON-ветка (без файла) ───
+    if (!needMultipart) {
+      final headers = await _getHeaders();
+      final resp =
+      await http.post(uri, headers: headers, body: jsonEncode(userMap));
+      if (resp.statusCode == 201) {
+        return (jsonDecode(resp.body))['message'] ?? 'Пользователь создан';
+      }
+      throw ApiException(
+          (jsonDecode(resp.body))['error'] ?? 'Ошибка при создании пользователя');
+    }
+
+    // ─── multipart-ветка (с файлом) ───
+    final req = http.MultipartRequest('POST', uri)
+      ..headers.addAll(await _getHeaders(auth: true, isMultipart: true))
+      ..fields.addAll(userMap.map((k, v) => MapEntry(k, v.toString())));
+
+    if (kIsWeb) {
+      req.files
+          .add(http.MultipartFile.fromBytes('avatar', bytes!, filename: filename));
+    } else {
+      req.files.add(await http.MultipartFile.fromPath('avatar', avatarFilePath!));
+    }
+
+    final streamed = await req.send();
+    final resp = await http.Response.fromStream(streamed);
+    if (resp.statusCode == 201) {
+      return (jsonDecode(resp.body))['message'] ?? 'Пользователь создан';
+    }
+    throw ApiException(
+        (jsonDecode(resp.body))['error'] ?? 'Ошибка при создании пользователя');
   }
 
   /// Обновляет данные пользователя.
@@ -180,27 +206,48 @@ class UserAPIService {
     }
   }
 
-  /// Устанавливает аватар пользователя с использованием multipart-запроса.
-  Future<String> setUserAvatar(int userId, String imagePath) async {
-    final uri = Uri.parse('$baseUrl/users/$userId/setUserAvatar');
-    final request = http.MultipartRequest('POST', uri);
-    request.headers.addAll(await _getHeaders(auth: true, isMultipart: true));
-    request.files.add(await http.MultipartFile.fromPath('avatar', imagePath));
-    try {
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final newAvatar = data['avatar'];
-        await AuthStorage.saveUserAvatar(newAvatar);
-        return newAvatar;
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw ApiException(errorData['error'] ?? 'Ошибка при установке аватара');
-      }
-    } catch (e) {
-      rethrow;
+/*─────────────────────────────────────────────────────────
+ |  Установить/заменить аватар (Web + Mobile)
+ |  • Mobile – imagePath
+ |  • Web    – bytes + filename
+ ─────────────────────────────────────────────────────────*/
+  Future<String> setUserAvatar(int userId, {String? imagePath, Uint8List? bytes, String? filename,}) async {
+    assert(
+    kIsWeb
+        ? (bytes != null && filename != null)
+        : (imagePath != null && imagePath.isNotEmpty),
+    'Передайте корректные параметры для текущей платформы',
+    );
+
+    if (kIsWeb && (bytes == null || filename == null)) {
+      throw ArgumentError(
+          'Для Web необходимо передать одновременно [bytes] и [filename].');
     }
+    if (!kIsWeb && (imagePath == null || imagePath.isEmpty)) {
+      throw ArgumentError(
+          'Для Mobile необходимо передать непустой [imagePath].');
+    }
+
+    final uri = Uri.parse('$baseUrl/users/$userId/setUserAvatar');
+    final req = http.MultipartRequest('POST', uri)
+      ..headers.addAll(await _getHeaders(auth: true, isMultipart: true));
+
+    if (kIsWeb) {
+      req.files
+          .add(http.MultipartFile.fromBytes('avatar', bytes!, filename: filename));
+    } else {
+      req.files.add(await http.MultipartFile.fromPath('avatar', imagePath!));
+    }
+
+    final streamed = await req.send();
+    final resp = await http.Response.fromStream(streamed);
+    if (resp.statusCode == 200) {
+      final avatar = (jsonDecode(resp.body))['avatar'];
+      await AuthStorage.saveUserAvatar(avatar);
+      return avatar;
+    }
+    throw ApiException(
+        (jsonDecode(resp.body))['error'] ?? 'Ошибка при установке аватара');
   }
 
   /// Получает URL аватара пользователя.
